@@ -5,6 +5,11 @@ import pyttsx3
 import requests
 import time
 import random
+import pydub
+import threading
+import pyaudio
+import Queue
+import pydub.utils
 
 
 BLASE_MAP = {
@@ -12,6 +17,56 @@ BLASE_MAP = {
     1: 'second',
     2: 'third',
 }
+
+class SoundCue(object):
+
+    AUDIO_CUES = {
+        'roar': pydub.AudioSegment.from_wav('./media/cheering.wav') - 15,
+        'crowd': pydub.AudioSegment.from_wav('./media/crowd_applause.wav') - 20,
+        'bat_hit': pydub.AudioSegment.from_wav('./media/bat_hit.wav'),
+        'bat_hit2': pydub.AudioSegment.from_wav('./media/bat_hit2.wav') - 10,
+        'bat_hit3': pydub.AudioSegment.from_wav('./media/bat_hit3.wav') - 10,
+        'bat_hit4': pydub.AudioSegment.from_wav('./media/bat_hit4.wav') - 10,
+    }
+
+    def __init__(self):
+        self.q = Queue.Queue()
+
+        self.channel1 = threading.Thread(target=self.run_sound)
+        self.channel1.daemon = True
+        self.channel1.start()
+
+        '''
+        self.channel2 = threading.Thread(target=self.run_sound)
+        self.channel2.daemon = True
+        self.channel2.start()
+        '''
+
+    def run_sound(self):
+        p = pyaudio.PyAudio()
+        stream = None
+        try:
+            while True:
+                try:
+                    sample = self.q.get()
+                    stream = p.open(
+                        format=p.get_format_from_width(sample.sample_width),
+                        channels=sample.channels,
+                        rate=sample.frame_rate,
+                        output=True,
+                    )
+                    for chunk in pydub.utils.make_chunks(sample, 500):
+                        stream.write(chunk._data)
+                finally:
+                    stream.stop_stream()
+                    stream.close()
+        finally:
+            p.terminate()
+
+    def play_sound(self, key):
+        print key
+        seg = self.AUDIO_CUES[key]
+        self.q.put_nowait(seg)
 
 
 def pronounce_inning(inning):
@@ -66,6 +121,9 @@ class BlaseballGlame(object):
         self.bases_occupied = 0
         self.team_at_bat = ''
 
+        self.sound_cues = SoundCue()
+        self.last_update = ''
+
     @property
     def has_runners(self):
         return self.on_blase != ['', '', '']
@@ -78,10 +136,23 @@ class BlaseballGlame(object):
                 runners.append((player, BLASE_MAP[i]))
         return runners
 
+    def sound_effects(self, pbp):
+        if pbp == self.last_update:
+            return
+        if any((k in pbp for k in ('scores', 'Double', 'Triple', 'double', 'triple', 'home run'))):
+            self.sound_cues.play_sound('roar')
+        elif 'hit' in pbp:
+            self.sound_cues.play_sound(random.choice([
+                'bat_hit',
+            ]))
+        if self.batting_change:
+            self.sound_cues.play_sound('crowd')
+
     def update(self, msg):
         """msg should already be json, filtered to the appropriate team"""
         pbp = msg['lastUpdate']
-        self.game_logs.append(pbp)
+        # self.game_logs.append(pbp)
+        self.sound_effects(pbp)
 
         self.id_ = msg['_id']
         self.away_team = msg['awayTeamName']
@@ -113,6 +184,8 @@ class BlaseballGlame(object):
                 player_name = player_names.get(pid)
                 self.on_blase[base] = player_name or 'runner'
         print(self.away_team, self.home_team, self.away_score, self.home_score, self.inning, self.top_of_inning, self.at_bat, self.pitching, self.strikes, self.balls, self.outs, self.on_blase)
+        print(pbp)
+        self.last_update = pbp
         return pbp
 
 
@@ -126,12 +199,21 @@ class Announcer(object):
 
     def on_message(self):
         def callback(ws, message):
-            message = ujson.loads(message[2:])
+            try:
+                message = ujson.loads(message[2:])
+            except Exception:
+                return
             if message[0] != 'gameDataUpdate':
                 return
             for game in message[1]['schedule']:
                 if self.calling_for in (game['awayTeamNickname'], game['homeTeamNickname']):
                     pbp = self.calling_game.update(game)
+
+                    if 'Ball' in pbp or 'Strike' in pbp:
+                        if random.random() < .15:
+                            self.voice.say('{} readying to pitch...'.format(
+                                self.calling_game.pitching))
+
                     if pbp != self.last_play_by_play:
                         self.voice.say(pbp)
                         self.last_play_by_play = pbp
@@ -141,9 +223,11 @@ class Announcer(object):
             quips.extend(self.quip_inning())
             quips.extend(self.quip_game_over(pbp))
             quips.extend(self.quip_strike(pbp))
+            '''
             if random.random() < .3:
                 base_quip = self.quip_on_base()
                 quips.extend(base_quip)
+            '''
 
             for quip in quips:
                 self.voice.say(quip)
@@ -164,14 +248,18 @@ class Announcer(object):
     def quip_outs(self):
         if self.calling_game.outs > 0:
             return random.choice([
-                '{} outs left'.format(self.calling_game.outs),
-                '{} with {} outs'.format(self.calling_game.at_bat, self.calling_game.outs),
+                '{} outs left'.format(3 - self.calling_game.outs),
+                '{} with {} out{}'.format(
+                    self.calling_game.team_at_bat,
+                    self.calling_game.outs,
+                    's' if self.calling_game.outs > 1 else '',
+                ),
                 '{} out{} remaining for the {}'.format(
                     3 - self.calling_game.outs,
                     's' if 3 - self.calling_game.outs > 1 else '',
                     self.calling_game.team_at_bat,
                 ),
-                '{} have {} out{} left'.format(
+                '{} have {} out{}'.format(
                     self.calling_game.team_at_bat,
                     self.calling_game.outs,
                     's' if self.calling_game.outs > 1 else '',
@@ -206,18 +294,29 @@ class Announcer(object):
         """announce current inning, score"""
         if not self.calling_game.batting_change:
             return []
+
         quips = []
+        '''
         quips.append('{} of the {}'.format(
             'top' if self.calling_game.top_of_inning else 'bottom',
             pronounce_inning(self.calling_game.inning),
         ))
+        '''
+        quips.append('{} taking the field'.format(self.calling_game.team_at_bat))
         if random.random() < .5:
-            quips.append('{} {}, {} {}'.format(
-                self.calling_game.away_team,
-                self.calling_game.away_score,
-                self.calling_game.home_team,
-                self.calling_game.home_score,
-            ))
+            quips.append(random.choice([
+                '{} {}, {} {}'.format(
+                    self.calling_game.away_team,
+                    self.calling_game.away_score,
+                    self.calling_game.home_team,
+                    self.calling_game.home_score,
+                ),
+                '{} up {} {}'.format(
+                    self.calling_game.away_team if self.calling_game.away_score > self.calling_game.home_score else self.calling_game.home_team,
+                    self.calling_game.away_score,
+                    self.calling_game.home_score,
+                ),
+            ]))
         return quips
 
     def quip_on_base(self):
@@ -295,7 +394,8 @@ def test():
                     u'homeTeamNickname': u'Crabs',
                     u'inning': 2,
                     u'isPostseason': False,
-                    u'lastUpdate': u"Comfort Septemberish reaches on fielder's choice. Tamara Crankit out at second base.",
+                    # u'lastUpdate': u"Comfort Septemberish reaches on fielder's choice. Tamara Crankit out at second base.",
+                    u'lastUpdate': u"York Silk hit a home run!",
                     u'outcomes': [],
                     u'phase': 3,
                     u'rules': u'4ae9d46a-5408-460a-84fb-cbd8d03fff6c',
@@ -313,8 +413,6 @@ def test():
 
     announcer.on_message()(None, '42' + ujson.dumps(test_dump))
     return
-
-
 
 
 if __name__ == '__main__':
