@@ -245,11 +245,6 @@ class Announcer(object):
             quips.extend(self.quip_inning())
             quips.extend(self.quip_game_over(pbp))
             quips.extend(self.quip_strike(pbp))
-            '''
-            if random.random() < .3:
-                base_quip = self.quip_on_base()
-                quips.extend(base_quip)
-            '''
 
             for quip in quips:
                 self.voice.say(quip)
@@ -304,6 +299,11 @@ class Announcer(object):
         if 'batting' not in play_by_play:
             return []
         quips = []
+        if random.random() < .1:
+            quips.append('{} of the {}'.format(
+                'top' if self.calling_game.top_of_inning else 'bottom',
+                pronounce_inning(self.calling_game.inning),
+            ))
         out_quip = self.quip_outs()
         if out_quip:
             quips.append(out_quip)
@@ -318,12 +318,6 @@ class Announcer(object):
             return []
 
         quips = []
-        '''
-        quips.append('{} of the {}'.format(
-            'top' if self.calling_game.top_of_inning else 'bottom',
-            pronounce_inning(self.calling_game.inning),
-        ))
-        '''
         quips.append('{} taking the field'.format(self.calling_game.team_at_bat))
         if random.random() < .5:
             quips.append(random.choice([
@@ -355,7 +349,7 @@ class Announcer(object):
 
 
 def main():
-    announcer = Announcer(calling_for='Millennials')
+    announcer = Announcer(calling_for='Fridays')
     while 1:
         websocket.enableTrace(True)
         ws = websocket.WebSocketApp(
@@ -369,7 +363,7 @@ def main():
 
 
 def test():
-    announcer = Announcer(calling_for='Millennials')
+    announcer = Announcer(calling_for='Fridays')
 
     test_dump = [
         'gameDataUpdate',
@@ -390,8 +384,8 @@ def test():
                     u'awayTeamBatterCount': 11,
                     u'awayTeamColor': u'#6388ad',
                     u'awayTeamEmoji': u'0x1F450',
-                    u'awayTeamName': u'New York Millennials',
-                    u'awayTeamNickname': u'Millennials',
+                    u'awayTeamName': u'Hawaii Fridays',
+                    u'awayTeamNickname': u'Fridays',
                     u'baseRunners': [u'd8ee256f-e3d0-46cb-8c77-b1f88d8c9df9'],
                     u'baserunnerCount': 1,
                     u'basesOccupied': [0],
@@ -417,7 +411,7 @@ def test():
                     u'inning': 2,
                     u'isPostseason': False,
                     # u'lastUpdate': u"Comfort Septemberish reaches on fielder's choice. Tamara Crankit out at second base.",
-                    u'lastUpdate': u"York Silk hit a home run!",
+                    u'lastUpdate': u"York Silk hit a triple home run!",
                     u'outcomes': [],
                     u'phase': 3,
                     u'rules': u'4ae9d46a-5408-460a-84fb-cbd8d03fff6c',
@@ -427,7 +421,7 @@ def test():
                     u'shame': False,
                     u'statsheet': u'ec7b5639-ddff-4ffa-8181-87710bbd02cd',
                     u'terminology': u'b67e9bbb-1495-4e1b-b517-f1444b0a6c8b',
-                    u'topOfInning': True,
+                    u'topOfInning': False,
                 u'weather': 11}
             ]
         },
@@ -435,6 +429,17 @@ def test():
 
     announcer.on_message()(None, '42' + ujson.dumps(test_dump))
     return
+
+
+def test_voices():
+    engine = pyttsx3.init()
+    for voice in engine.getProperty('voices'):
+        if voice.name not in ('Alex', 'Daniel', 'Fiona', 'Karen', 'Maged', 'Yuri'):
+            continue
+        print voice.id
+        engine.setProperty('voice', voice.id)
+        engine.say('Sphinx of black quartz, hear my vow!')
+        engine.runAndWait()
 
 
 if __name__ == '__main__':
