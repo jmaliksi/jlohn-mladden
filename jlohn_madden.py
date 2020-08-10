@@ -10,6 +10,7 @@ import threading
 import pyaudio
 import Queue
 import pydub.utils
+from concurrent.futures import ThreadPoolExecutor
 
 
 BLASE_MAP = {
@@ -21,26 +22,34 @@ BLASE_MAP = {
 class SoundCue(object):
 
     AUDIO_CUES = {
-        'roar': pydub.AudioSegment.from_wav('./media/cheering.wav') - 15,
+        'cheer': pydub.AudioSegment.from_wav('./media/cheering.wav') - 15,
         'crowd': pydub.AudioSegment.from_wav('./media/crowd_applause.wav') - 20,
-        'bat_hit': pydub.AudioSegment.from_wav('./media/bat_hit.wav'),
+        'bat_hit': pydub.AudioSegment.from_wav('./media/bat_hit.wav') - 10,
         'bat_hit2': pydub.AudioSegment.from_wav('./media/bat_hit2.wav') - 10,
         'bat_hit3': pydub.AudioSegment.from_wav('./media/bat_hit3.wav') - 10,
-        'bat_hit4': pydub.AudioSegment.from_wav('./media/bat_hit4.wav') - 10,
+        'roar': pydub.AudioSegment.from_wav('./media/Big-crowd-cheering.wav') - 7,
     }
 
     def __init__(self):
-        self.q = Queue.Queue()
+        self.sound_pool = ThreadPoolExecutor(max_workers=10)
+        self._pyaudio = pyaudio.PyAudio()
 
-        self.channel1 = threading.Thread(target=self.run_sound)
-        self.channel1.daemon = True
-        self.channel1.start()
-
-        '''
-        self.channel2 = threading.Thread(target=self.run_sound)
-        self.channel2.daemon = True
-        self.channel2.start()
-        '''
+    def execute_sound(self, key, delay=0):
+        if delay:
+            time.sleep(delay)
+        seg = self.AUDIO_CUES[key]
+        stream = self._pyaudio.open(
+            format=self._pyaudio.get_format_from_width(seg.sample_width),
+            channels=seg.channels,
+            rate=seg.frame_rate,
+            output=True,
+        )
+        try:
+            for chunk in pydub.utils.make_chunks(seg, 500):
+                stream.write(chunk._data)
+        finally:
+            stream.stop_stream()
+            stream.close()
 
     def run_sound(self):
         p = pyaudio.PyAudio()
@@ -57,16 +66,16 @@ class SoundCue(object):
                     )
                     for chunk in pydub.utils.make_chunks(sample, 500):
                         stream.write(chunk._data)
+                        thread.sleep(0)
                 finally:
                     stream.stop_stream()
                     stream.close()
         finally:
             p.terminate()
 
-    def play_sound(self, key):
+    def play_sound(self, key, delay=0):
         print key
-        seg = self.AUDIO_CUES[key]
-        self.q.put_nowait(seg)
+        self.sound_pool.submit(self.execute_sound, key, delay=delay)
 
 
 def pronounce_inning(inning):
@@ -140,11 +149,16 @@ class BlaseballGlame(object):
         if pbp == self.last_update:
             return
         if any((k in pbp for k in ('scores', 'Double', 'Triple', 'double', 'triple', 'home run'))):
-            self.sound_cues.play_sound('roar')
-        elif 'hit' in pbp:
+            self.sound_cues.play_sound('cheer')
+        if 'hit' in pbp:
             self.sound_cues.play_sound(random.choice([
                 'bat_hit',
+                'bat_hit2',
+                'bat_hit3',
             ]))
+        if 'home run' in pbp:
+            self.sound_cues.play_sound('roar', delay=1)
+
         if self.batting_change:
             self.sound_cues.play_sound('crowd')
 
@@ -183,7 +197,15 @@ class BlaseballGlame(object):
             for pid, base in zip(msg['baseRunners'], msg['basesOccupied']):
                 player_name = player_names.get(pid)
                 self.on_blase[base] = player_name or 'runner'
-        print(self.away_team, self.home_team, self.away_score, self.home_score, self.inning, self.top_of_inning, self.at_bat, self.pitching, self.strikes, self.balls, self.outs, self.on_blase)
+        print(
+            'away: {} {}'.format(self.away_team, self.away_score),
+            'home: {} {}'.format(self.home_team, self.home_score),
+            'inning: {}'.format(self.inning),
+            'at_bat: {}'.format(self.at_bat),
+            'pitching: {}'.format(self.pitching),
+            's|b|o {}|{}|{}'.format(self.strikes, self.balls, self.outs),
+            self.on_blase,
+        )
         print(pbp)
         self.last_update = pbp
         return pbp
@@ -210,7 +232,7 @@ class Announcer(object):
                     pbp = self.calling_game.update(game)
 
                     if 'Ball' in pbp or 'Strike' in pbp:
-                        if random.random() < .15:
+                        if random.random() < .1:
                             self.voice.say('{} readying to pitch...'.format(
                                 self.calling_game.pitching))
 
@@ -416,4 +438,4 @@ def test():
 
 
 if __name__ == '__main__':
-    main()
+    test()
