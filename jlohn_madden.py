@@ -1,17 +1,16 @@
-import text_to_speech
+import time
+import random
+import threading
+import Queue
+from concurrent.futures import ThreadPoolExecutor
+from collections import defaultdict
 import websocket
 import ujson
 import pyttsx3
 import requests
-import time
-import random
 import pydub
-import threading
-import pyaudio
-import Queue
 import pydub.utils
-from concurrent.futures import ThreadPoolExecutor
-from collections import defaultdict
+import pyaudio
 
 
 BLASE_MAP = {
