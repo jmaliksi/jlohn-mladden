@@ -11,6 +11,7 @@ import pyaudio
 import Queue
 import pydub.utils
 from concurrent.futures import ThreadPoolExecutor
+from collections import defaultdict
 
 
 BLASE_MAP = {
@@ -19,15 +20,21 @@ BLASE_MAP = {
     2: 'third',
 }
 
-class SoundCue(object):
+class UniqueList(list):
+    def append(self, value):
+        if value not in self:
+            super(UniqueList, self).append(value)
+
+
+class SoundManager(object):
 
     AUDIO_CUES = {
-        'cheer': pydub.AudioSegment.from_wav('./media/cheering.wav') - 15,
+        'cheer': pydub.AudioSegment.from_wav('./media/cheering.wav') - 18,
         'crowd': pydub.AudioSegment.from_wav('./media/crowd_applause.wav') - 20,
         'bat_hit': pydub.AudioSegment.from_wav('./media/bat_hit.wav') - 10,
         'bat_hit2': pydub.AudioSegment.from_wav('./media/bat_hit2.wav') - 10,
         'bat_hit3': pydub.AudioSegment.from_wav('./media/bat_hit3.wav') - 10,
-        'roar': pydub.AudioSegment.from_wav('./media/Big-crowd-cheering.wav') - 7,
+        'roar': pydub.AudioSegment.from_wav('./media/Big-crowd-cheering.wav') - 10,
     }
 
     def __init__(self):
@@ -78,14 +85,35 @@ class SoundCue(object):
         self.sound_pool.submit(self.execute_sound, key, delay=delay)
 
 
-def pronounce_inning(inning):
-    if inning == 1:
-        return 'first'
-    if inning == 2:
-        return 'second'
-    if inning == 3:
-        return 'third'
-    return '{}th'.format(inning)
+sound_manager = SoundManager()
+
+
+sound_cues = [
+    ('scores', ['cheer'], 0.1),
+    ('double', ['cheer'], 0.1),
+    ('triple', ['cheer'], 0.1),
+    ('hit', ['bat_hit', 'bat_hit2', 'bat_hit3'], 0),
+    ('foul', ['bat_hit', 'bat_hit2', 'bat_hit3'], 0),
+    ('reaches', ['bat_hit', 'bat_hit2', 'bat_hit3'], 0),
+    ('home run', ['roar'], 1.2),
+    ('out', ['crowd'], 0.3),
+]
+
+
+class utils(object):
+    @staticmethod
+    def pronounce_inning(inning):
+        if inning == 1:
+            return 'first'
+        if inning == 2:
+            return 'second'
+        if inning == 3:
+            return 'third'
+        return '{}th'.format(inning)
+
+    @staticmethod
+    def plural(v):
+        return 's' if v > 1 else ''
 
 
 class PlayerNames(object):
@@ -130,7 +158,6 @@ class BlaseballGlame(object):
         self.bases_occupied = 0
         self.team_at_bat = ''
 
-        self.sound_cues = SoundCue()
         self.last_update = ''
 
     @property
@@ -145,28 +172,11 @@ class BlaseballGlame(object):
                 runners.append((player, BLASE_MAP[i]))
         return runners
 
-    def sound_effects(self, pbp):
-        if pbp == self.last_update:
-            return
-        if any((k in pbp for k in ('scores', 'Double', 'Triple', 'double', 'triple', 'home run'))):
-            self.sound_cues.play_sound('cheer')
-        if 'hit' in pbp:
-            self.sound_cues.play_sound(random.choice([
-                'bat_hit',
-                'bat_hit2',
-                'bat_hit3',
-            ]))
-        if 'home run' in pbp:
-            self.sound_cues.play_sound('roar', delay=1)
-
-        if self.batting_change:
-            self.sound_cues.play_sound('crowd')
-
     def update(self, msg):
         """msg should already be json, filtered to the appropriate team"""
         pbp = msg['lastUpdate']
         # self.game_logs.append(pbp)
-        self.sound_effects(pbp)
+        # self.sound_effects(pbp)
 
         self.id_ = msg['_id']
         self.away_team = msg['awayTeamName']
@@ -211,13 +221,235 @@ class BlaseballGlame(object):
         return pbp
 
 
+class Quip(object):
+
+    before_index = defaultdict(list)
+    after_index = defaultdict(list)
+
+    def __init__(self,
+                 phrases,
+                 trigger_before=None,
+                 trigger_after=None,
+                 args=None,
+                 chance=1.0,
+                 conditions='True'):
+        self.phrases = phrases
+        self.trigger_before = trigger_before or []
+        self.trigger_after = trigger_after or []
+        self.args = args or {}
+        self.chance = chance
+        self.conditions = conditions
+
+        for trigger in self.trigger_before:
+            self.before_index[trigger].append(self)
+        for trigger in self.trigger_after:
+            self.after_index[trigger].append(self)
+
+    @classmethod
+    def load(cls, quips):
+        """json list"""
+        res = []
+        for quip in quips:
+            res.append(cls(**quip))
+        return res
+
+    @classmethod
+    def say_quips(cls, play_by_play, game):
+        play_by_play = play_by_play.lower()
+        quips = UniqueList()
+        for term, quip_list in cls.before_index.items():
+            for quip in quip_list:
+                if term in play_by_play and random.random() < quip.chance and eval(quip.conditions, {}, {'game': game, 'utils': utils}):
+                    quips.append(quip.evaluate(play_by_play, game))
+
+        quips.append(play_by_play)
+
+        for term, quip_list in cls.after_index.items():
+            for quip in quip_list:
+                if term in play_by_play and random.random() < quip.chance and eval(quip.conditions, {}, {'game': game, 'utils': utils}):
+                    quips.append(quip.evaluate(play_by_play, game))
+
+        return quips
+
+    def evaluate(self, play_by_play, game):
+        args = {}
+        for key, equation in self.args.items():
+            args[key] = eval(equation, {}, {'game': game, 'utils': utils})
+        return random.choice(self.phrases).format(**args)
+
+
+Quip.load([
+    {
+        'phrases': [
+            '{pitcher} readying to pitch',
+            '{batter} waiting for the pitch',
+        ],
+        'trigger_before': ['ball', 'strike', 'hit', 'foul'],
+        'args': {
+            'pitcher': 'game.pitching',
+            'batter': 'game.at_bat',
+        },
+        'chance': 0.1,
+    },
+    {
+        'phrases': ['{at} {as}, {ht} {hs}.'],
+        'trigger_after': ['game over', 'home run'],
+        'args': {
+            'at': 'game.away_team',
+            'as': 'game.away_score',
+            'ht': 'game.home_team',
+            'hs': 'game.home_score',
+        },
+        'conditions': 'game.away_score != game.home_score',
+    },
+    {
+        'phrases': [
+            '{outs} out{outs_s} left',
+            '{tab} with {outs} out{outs_s}',
+            '{left} out{left_s} remaining for the {tab}',
+            '{tab} have {outs} out{outs_s}',
+        ],
+        'trigger_after': ['strike'],
+        'args': {
+            'tab': 'game.team_at_bat',
+            'outs': 'game.outs',
+            'left': '3 - game.outs',
+            'outs_s': 'utils.plural(game.outs)',
+            'left_s': 'utils.plural(3 - game.outs)',
+        },
+        'chance': 0.3,
+    },
+    {
+        'phrases': ['{tb} of the {i}'],
+        'trigger_after': ['batting for'],
+        'args': {
+            'tb': '"top" if game.top_of_inning else "bottom"',
+            'i': 'game.inning',
+        },
+        'chance': 0.1,
+    },
+    {
+        'phrases': [
+            '{outs} out{outs_s} left',
+            '{tab} with {outs} out{outs_s}',
+            '{left} out{left_s} remaining for the {tab}',
+            '{tab} have {outs} out{outs_s}',
+        ],
+        'trigger_after': ['batting for'],
+        'args': {
+            'tab': 'game.team_at_bat',
+            'outs': 'game.outs',
+            'left': '3 - game.outs',
+            'outs_s': 'utils.plural(game.outs)',
+            'left_s': 'utils.plural(3 - game.outs)',
+        },
+        'chance': 1.0,
+    },
+    {
+        'phrases': ['{p} pitching.'],
+        'trigger_after': ['batting for'],
+        'args': {
+            'p': 'game.pitching',
+        },
+        'chance': 0.3,
+    },
+    {
+        'phrases': [
+            '{num} runner{s} on base.',
+            '{who} on {base}.',
+        ],
+        'trigger_after': ['batting for'],
+        'args': {
+            'num': 'game.bases_occupied',
+            's': 'utils.plural(game.bases_occupied)',
+            'who': 'game.runners[-1][0]',
+            'base': 'game.runners[-1[1]',
+        },
+        'conditions': '1 < game.bases_occupied < 3',
+        'chance': 1.0,
+    },
+    {
+        'phrases': [
+            'bases loaded.',
+        ],
+        'trigger_after': ['batting for'],
+        'conditions': 'game.bases_occupied == 3',
+        'chance': 1.0,
+    },
+    {
+        'phrases': ['{ab} taking the field'],
+        'trigger_after': ['out'],
+        'args': {
+            'ab': 'game.team_at_bat',
+        },
+        'conditions': 'game.batting_change',
+        'chance': 1.0,
+    },
+    {
+        'phrases': [
+            '{at} {as}, {ht} {hs}.',
+            '{lt} up {ls} {us}.',
+        ],
+        'trigger_after': ['out'],
+        'args': {
+            'at': 'game.away_team',
+            'as': 'game.away_score',
+            'ht': 'game.home_team',
+            'hs': 'game.home_score',
+            'lt': 'game.away_team if game.away_score > game.home_score else game.home_team',
+            'ls': 'game.away_score if game.away_score > game.home_score else game.home_score',
+            'us': 'game.away_score if game.away_score < game.home_score else game.home_score',
+        },
+        'conditions': 'game.batting_change and game.away_score != game.home_score',
+        'chance': 0.5,
+    },
+    {
+        'phrases': [
+            'game tied!',
+            '{ab} tied {s} {s}.',
+            'game tied {s} {s}.',
+            '{at} {ht} tied {s} {s}.',
+        ],
+        'trigger_after': ['home run', 'score'],
+        'args': {
+            'at': 'game.away_team',
+            'ht': 'game.home_team',
+            's': 'game.away_score',
+            'ab': 'game.team_at_bat',
+        },
+        'conditions': 'game.away_score == game.home_score',
+        'chance': 1.0,
+    },
+    {
+        'phrases': [
+            'game tied!',
+            '{ab} tied {s} {s}.',
+            'game tied {s} {s}.',
+            '{at} {ht} tied {s} {s}.',
+        ],
+        'trigger_after': ['out'],
+        'args': {
+            'at': 'game.away_team',
+            'ht': 'game.home_team',
+            's': 'game.away_score',
+            'ab': 'game.team_at_bat',
+        },
+        'conditions': 'game.away_score == game.home_score and game.batting_change',
+        'chance': 0.5,
+    },
+])
+
+
+
 class Announcer(object):
 
     def __init__(self, calling_for='Fridays'):
         self.calling_for = calling_for
         self.calling_game = BlaseballGlame()
-        self.voice = pyttsx3.init()
-        self.last_play_by_play = ''
+        self.voice = pyttsx3.init(debug=True)
+        self.voice.connect('started-utterance', self.sound_effect)
+
+        #self.last_play_by_play = ''
 
     def on_message(self):
         def callback(ws, message):
@@ -230,122 +462,18 @@ class Announcer(object):
             for game in message[1]['schedule']:
                 if self.calling_for in (game['awayTeamNickname'], game['homeTeamNickname']):
                     pbp = self.calling_game.update(game)
+                    quips = Quip.say_quips(pbp, self.calling_game)
+                    for quip in quips:
+                        self.voice.say(quip, quip)
 
-                    if 'Ball' in pbp or 'Strike' in pbp:
-                        if random.random() < .1:
-                            self.voice.say('{} readying to pitch...'.format(
-                                self.calling_game.pitching))
-
-                    if pbp != self.last_play_by_play:
-                        self.voice.say(pbp)
-                        self.last_play_by_play = pbp
                     break
-            quips = []
-            quips.extend(self.quip_batting(pbp))
-            quips.extend(self.quip_inning())
-            quips.extend(self.quip_game_over(pbp))
-            quips.extend(self.quip_strike(pbp))
-
-            for quip in quips:
-                self.voice.say(quip)
-
             self.voice.runAndWait()
         return callback
 
-    def quip_game_over(self, play_by_play):
-        if "Game over" not in play_by_play:
-            return []
-        return ['{} {}, {} {}'.format(
-                self.calling_game.away_team,
-                self.calling_game.away_score,
-                self.calling_game.home_team,
-                self.calling_game.home_score,
-        )]
-
-    def quip_outs(self):
-        if self.calling_game.outs > 0:
-            return random.choice([
-                '{} outs left'.format(3 - self.calling_game.outs),
-                '{} with {} out{}'.format(
-                    self.calling_game.team_at_bat,
-                    self.calling_game.outs,
-                    's' if self.calling_game.outs > 1 else '',
-                ),
-                '{} out{} remaining for the {}'.format(
-                    3 - self.calling_game.outs,
-                    's' if 3 - self.calling_game.outs > 1 else '',
-                    self.calling_game.team_at_bat,
-                ),
-                '{} have {} out{}'.format(
-                    self.calling_game.team_at_bat,
-                    self.calling_game.outs,
-                    's' if self.calling_game.outs > 1 else '',
-                ),
-            ])
-        return None
-
-    def quip_strike(self, play_by_play):
-        if 'Strike' not in play_by_play:
-            return []
-        quips = []
-        if random.random() < .3:
-            out_quip = self.quip_outs()
-            if out_quip:
-                quips.append(out_quip)
-        return quips
-
-    def quip_batting(self, play_by_play):
-        """announce number outs, runners on base, pitcher"""
-        if 'batting' not in play_by_play:
-            return []
-        quips = []
-        if random.random() < .1:
-            quips.append('{} of the {}'.format(
-                'top' if self.calling_game.top_of_inning else 'bottom',
-                pronounce_inning(self.calling_game.inning),
-            ))
-        out_quip = self.quip_outs()
-        if out_quip:
-            quips.append(out_quip)
-        if random.random() < .3:
-            quips.append('{} pitching.'.format(self.calling_game.pitching))
-        quips.extend(self.quip_on_base())
-        return quips
-
-    def quip_inning(self):
-        """announce current inning, score"""
-        if not self.calling_game.batting_change:
-            return []
-
-        quips = []
-        quips.append('{} taking the field'.format(self.calling_game.team_at_bat))
-        if random.random() < .5:
-            quips.append(random.choice([
-                '{} {}, {} {}'.format(
-                    self.calling_game.away_team,
-                    self.calling_game.away_score,
-                    self.calling_game.home_team,
-                    self.calling_game.home_score,
-                ),
-                '{} up {} {}'.format(
-                    self.calling_game.away_team if self.calling_game.away_score > self.calling_game.home_score else self.calling_game.home_team,
-                    self.calling_game.away_score,
-                    self.calling_game.home_score,
-                ),
-            ]))
-        return quips
-
-    def quip_on_base(self):
-        if self.calling_game.has_runners:
-            runners = self.calling_game.runners[-1]
-            return [random.choice([
-                '{} runner{} on base'.format(
-                    self.calling_game.bases_occupied,
-                    's' if self.calling_game.bases_occupied > 1 else '',
-                ),
-                '{} on {}'.format(runners[0], runners[1]),
-            ])]
-        return []
+    def sound_effect(self, name):
+        for cue in sound_cues:
+            if cue[0] in name:
+                sound_manager.play_sound(random.choice(cue[1]), delay=cue[2])
 
 
 def main():
@@ -410,8 +538,8 @@ def test():
                     u'homeTeamNickname': u'Crabs',
                     u'inning': 2,
                     u'isPostseason': False,
-                    # u'lastUpdate': u"Comfort Septemberish reaches on fielder's choice. Tamara Crankit out at second base.",
-                    u'lastUpdate': u"York Silk hit a triple home run!",
+                    u'lastUpdate': u"Strike, looking. 1-1",
+                    #u'lastUpdate': u"York Silk hit a triple home run!",
                     u'outcomes': [],
                     u'phase': 3,
                     u'rules': u'4ae9d46a-5408-460a-84fb-cbd8d03fff6c',
