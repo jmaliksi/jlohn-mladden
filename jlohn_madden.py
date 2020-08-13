@@ -11,6 +11,7 @@ import requests
 import pydub
 import pydub.utils
 import pyaudio
+import yaml
 
 
 BLASE_MAP = {
@@ -27,23 +28,18 @@ class UniqueList(list):
 
 class SoundManager(object):
 
-    AUDIO_CUES = {
-        'cheer': pydub.AudioSegment.from_wav('./media/cheering.wav') - 18,
-        'crowd': pydub.AudioSegment.from_wav('./media/crowd_applause.wav') - 20,
-        'bat_hit': pydub.AudioSegment.from_wav('./media/bat_hit.wav') - 10,
-        'bat_hit2': pydub.AudioSegment.from_wav('./media/bat_hit2.wav') - 10,
-        'bat_hit3': pydub.AudioSegment.from_wav('./media/bat_hit3.wav') - 10,
-        'roar': pydub.AudioSegment.from_wav('./media/Big-crowd-cheering.wav') - 10,
-    }
+    def __init__(self, sounds):
+        self.audio_cues = {}
+        for name, config in sounds.items():
+            self.audio_cues[name] = pydub.AudioSegment.from_wav(config['file']) + config['volume']
 
-    def __init__(self):
         self.sound_pool = ThreadPoolExecutor(max_workers=10)
         self._pyaudio = pyaudio.PyAudio()
 
     def execute_sound(self, key, delay=0):
         if delay:
             time.sleep(delay)
-        seg = self.AUDIO_CUES[key]
+        seg = self.audio_cues[key]
         stream = self._pyaudio.open(
             format=self._pyaudio.get_format_from_width(seg.sample_width),
             channels=seg.channels,
@@ -82,21 +78,6 @@ class SoundManager(object):
     def play_sound(self, key, delay=0):
         print key
         self.sound_pool.submit(self.execute_sound, key, delay=delay)
-
-
-sound_manager = SoundManager()
-
-
-sound_cues = [
-    ('scores', ['cheer'], 0.1),
-    ('double', ['cheer'], 0.1),
-    ('triple', ['cheer'], 0.1),
-    ('hit', ['bat_hit', 'bat_hit2', 'bat_hit3'], 0),
-    ('foul', ['bat_hit', 'bat_hit2', 'bat_hit3'], 0),
-    ('reaches', ['bat_hit', 'bat_hit2', 'bat_hit3'], 0),
-    ('home run', ['roar'], 1.2),
-    ('out', ['crowd'], 0.3),
-]
 
 
 class utils(object):
@@ -277,169 +258,6 @@ class Quip(object):
         return random.choice(self.phrases).format(**args)
 
 
-Quip.load([
-    {
-        'phrases': [
-            '{pitcher} readying to pitch',
-            '{batter} waiting for the pitch',
-        ],
-        'trigger_before': ['ball', 'strike', 'hit', 'foul'],
-        'args': {
-            'pitcher': 'game.pitching',
-            'batter': 'game.at_bat',
-        },
-        'chance': 0.1,
-    },
-    {
-        'phrases': ['{at} {as}, {ht} {hs}.'],
-        'trigger_after': ['game over', 'home run'],
-        'args': {
-            'at': 'game.away_team',
-            'as': 'game.away_score',
-            'ht': 'game.home_team',
-            'hs': 'game.home_score',
-        },
-        'conditions': 'game.away_score != game.home_score',
-    },
-    {
-        'phrases': [
-            '{outs} out{outs_s} left',
-            '{tab} with {outs} out{outs_s}',
-            '{left} out{left_s} remaining for the {tab}',
-            '{tab} have {outs} out{outs_s}',
-        ],
-        'trigger_after': ['strike'],
-        'args': {
-            'tab': 'game.team_at_bat',
-            'outs': 'game.outs',
-            'left': '3 - game.outs',
-            'outs_s': 'utils.plural(game.outs)',
-            'left_s': 'utils.plural(3 - game.outs)',
-        },
-        'chance': 0.3,
-    },
-    {
-        'phrases': ['{tb} of the {i}'],
-        'trigger_after': ['batting for'],
-        'args': {
-            'tb': '"top" if game.top_of_inning else "bottom"',
-            'i': 'game.inning',
-        },
-        'chance': 0.1,
-    },
-    {
-        'phrases': [
-            '{outs} out{outs_s} left',
-            '{tab} with {outs} out{outs_s}',
-            '{left} out{left_s} remaining for the {tab}',
-            '{tab} have {outs} out{outs_s}',
-        ],
-        'trigger_after': ['batting for'],
-        'args': {
-            'tab': 'game.team_at_bat',
-            'outs': 'game.outs',
-            'left': '3 - game.outs',
-            'outs_s': 'utils.plural(game.outs)',
-            'left_s': 'utils.plural(3 - game.outs)',
-        },
-        'chance': 1.0,
-    },
-    {
-        'phrases': ['{p} pitching.'],
-        'trigger_after': ['batting for'],
-        'args': {
-            'p': 'game.pitching',
-        },
-        'chance': 0.3,
-    },
-    {
-        'phrases': [
-            '{num} runner{s} on base.',
-            '{who} on {base}.',
-        ],
-        'trigger_after': ['batting for'],
-        'args': {
-            'num': 'game.bases_occupied',
-            's': 'utils.plural(game.bases_occupied)',
-            'who': 'game.runners[-1][0]',
-            'base': 'game.runners[-1[1]',
-        },
-        'conditions': '1 < game.bases_occupied < 3',
-        'chance': 1.0,
-    },
-    {
-        'phrases': [
-            'bases loaded.',
-        ],
-        'trigger_after': ['batting for'],
-        'conditions': 'game.bases_occupied == 3',
-        'chance': 1.0,
-    },
-    {
-        'phrases': ['{ab} taking the field'],
-        'trigger_after': ['out'],
-        'args': {
-            'ab': 'game.team_at_bat',
-        },
-        'conditions': 'game.batting_change',
-        'chance': 1.0,
-    },
-    {
-        'phrases': [
-            '{at} {as}, {ht} {hs}.',
-            '{lt} up {ls} {us}.',
-        ],
-        'trigger_after': ['out'],
-        'args': {
-            'at': 'game.away_team',
-            'as': 'game.away_score',
-            'ht': 'game.home_team',
-            'hs': 'game.home_score',
-            'lt': 'game.away_team if game.away_score > game.home_score else game.home_team',
-            'ls': 'game.away_score if game.away_score > game.home_score else game.home_score',
-            'us': 'game.away_score if game.away_score < game.home_score else game.home_score',
-        },
-        'conditions': 'game.batting_change and game.away_score != game.home_score',
-        'chance': 0.5,
-    },
-    {
-        'phrases': [
-            'game tied!',
-            '{ab} tied {s} {s}.',
-            'game tied {s} {s}.',
-            '{at} {ht} tied {s} {s}.',
-        ],
-        'trigger_after': ['home run', 'score'],
-        'args': {
-            'at': 'game.away_team',
-            'ht': 'game.home_team',
-            's': 'game.away_score',
-            'ab': 'game.team_at_bat',
-        },
-        'conditions': 'game.away_score == game.home_score',
-        'chance': 1.0,
-    },
-    {
-        'phrases': [
-            'game tied!',
-            '{ab} tied {s} {s}.',
-            'game tied {s} {s}.',
-            '{at} {ht} tied {s} {s}.',
-        ],
-        'trigger_after': ['out'],
-        'args': {
-            'at': 'game.away_team',
-            'ht': 'game.home_team',
-            's': 'game.away_score',
-            'ab': 'game.team_at_bat',
-        },
-        'conditions': 'game.away_score == game.home_score and game.batting_change',
-        'chance': 0.5,
-    },
-])
-
-
-
 class Announcer(object):
 
     def __init__(self, calling_for='Fridays'):
@@ -471,8 +289,11 @@ class Announcer(object):
 
     def sound_effect(self, name):
         for cue in sound_cues:
-            if cue[0] in name:
-                sound_manager.play_sound(random.choice(cue[1]), delay=cue[2])
+            if cue['trigger'] in name:
+                sound_manager.play_sound(
+                    random.choice(cue['sounds']),
+                    delay=cue['delay'],
+                )
 
 
 def main():
@@ -567,6 +388,13 @@ def test_voices():
         engine.setProperty('voice', voice.id)
         engine.say('Sphinx of black quartz, hear my vow!')
         engine.runAndWait()
+
+
+with open('./quips.yaml', 'r') as __f:
+    __y = yaml.load(__f)
+    sound_manager = SoundManager(__y['sounds'])
+    sound_cues = __y['sound_cues']
+    Quip.load(__y['quips'])
 
 
 if __name__ == '__main__':

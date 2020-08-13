@@ -111,6 +111,7 @@ pyobjc-framework-WebKit==5.3
 python-engineio==3.13.1
 python-socketio==4.6.0
 pyttsx3==2.7
+PyYAML==5.3.1
 requests==2.24.0
 six==1.15.0
 soupsieve==1.9.6
