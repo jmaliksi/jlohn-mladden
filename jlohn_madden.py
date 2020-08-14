@@ -1,7 +1,7 @@
 import time
 import random
 import threading
-import Queue
+import queue
 from concurrent.futures import ThreadPoolExecutor
 from collections import defaultdict
 import websocket
@@ -76,7 +76,7 @@ class SoundManager(object):
             p.terminate()
 
     def play_sound(self, key, delay=0):
-        print key
+        print(key)
         self.sound_pool.submit(self.execute_sound, key, delay=delay)
 
 
@@ -384,7 +384,7 @@ def test_voices():
     for voice in engine.getProperty('voices'):
         if voice.name not in ('Alex', 'Daniel', 'Fiona', 'Karen', 'Maged', 'Yuri'):
             continue
-        print voice.id
+        print(voice.id)
         engine.setProperty('voice', voice.id)
         engine.say('Sphinx of black quartz, hear my vow!')
         engine.runAndWait()
