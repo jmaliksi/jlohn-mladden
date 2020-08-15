@@ -2,7 +2,7 @@
 sounds:
   cheer:
     file: ./media/cheering.wav
-    volume: -18
+    volume: -17
   crowd:
     file: ./media/crowd_applause.wav
     volume: -20
@@ -17,7 +17,7 @@ sounds:
     volume: -10
   roar:
     file: ./media/roar.wav
-    volume: -17
+    volume: -15
 
 sound_cues:
   -
@@ -75,8 +75,8 @@ sound_cues:
 quips:
   -
     phrases:
-      - '{pitcher} readying to pitch'
-      - '{batter} waiting for the pitch'
+      - '{pitcher} readying to pitch.'
+      - '{batter} waiting for the pitch.'
     trigger_before:
       - ball
       - strike
@@ -247,10 +247,10 @@ quips:
     chance: 1.0
   -
     phrases:
-      - "{tab} with the grand! slam!"
-      - "Get out the rye bread and mustard, Grandma, it's time for a grand salami."
+      - "{tab} with the grand slam!"
+      - "Get out the rye bread and mustard Grandma it's time for a grand salami."
       - "Break out the wine and cheese cuz that's a grand salami."
-      - "Get out the rye bread and mustard, {tab}, for that grand salami sandwich."
+      - "Get out the rye bread and mustard {tab} for that grand salami sandwich."
       - "bah god, {pitcher} had a family!"
     trigger_after:
       - 'grand slam'
