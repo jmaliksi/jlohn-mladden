@@ -17,7 +17,7 @@ sounds:
     volume: -10
   roar:
     file: ./media/roar.wav
-    volume: -10
+    volume: -17
 
 sound_cues:
   -
@@ -66,6 +66,11 @@ sound_cues:
     sounds:
       - crowd
     delay: 0.3
+  -
+    trigger: grand slam
+    sounds:
+      - roar
+    delay: 1.1
 
 quips:
   -
@@ -217,3 +222,53 @@ quips:
       ab: 'game.team_at_bat'
     conditions: 'game.away_score == game.home_score and game.batting_change'
     chance: 0.5
+  -
+    phrases:
+      - "oh, and that's a bad miss."
+      - "shame."
+    trigger_after:
+      - 'struck out swinging'
+    chance: 0.2
+  -
+    phrases:
+      - "now that's some blays ball!"
+      - "the commissioner is doing a great job!"
+      - "REPENT."
+    trigger_after:
+      - 'incinerated'
+    chance: 1.0
+  -
+    phrases:
+      - "the umpire's gone rogue!"
+      - "are the umpire's eyes glowing?"
+      - "holy smokes!"
+    trigger_before:
+      - 'incinerated'
+    chance: 1.0
+  -
+    phrases:
+      - "{tab} with the grand! slam!"
+      - "Get out the rye bread and mustard, Grandma, it's time for a grand salami."
+      - "Break out the wine and cheese cuz that's a grand salami."
+      - "Get out the rye bread and mustard, {tab}, for that grand salami sandwich."
+      - "bah god, {pitcher} had a family!"
+    trigger_after:
+      - 'grand slam'
+    args:
+      tab: 'game.team_at_bat'
+      pitcher: 'game.pitching'
+    chance: 1.0
+  -
+    phrases:
+      - "put a tent on that circus."
+      - "nope, you can't do that."
+      - "are you kidding me."
+      - "yup, that's frustrating."
+      - "shame."
+      - "that's a shame."
+      - "woof."
+    trigger_after:
+      - "struck out swinging"
+      - "caught stealing"
+    chance: 0.2
+    conditions: '(game.home_score - game.away_score > 5 and game.top_of_inning) or (game.away_score - game.home_score > 5 and not game.top_of_inning)'

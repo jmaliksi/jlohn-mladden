@@ -326,7 +326,7 @@ def test():
                     u'awayOdds': 0.5585154403765049,
                     u'awayPitcher': u'bf122660-df52-4fc4-9e70-ee185423ff93',
                     u'awayPitcherName': u'Walton Sports',
-                    u'awayScore': 2,
+                    u'awayScore': 6,
                     u'awayStrikes': 3,
                     u'awayTeam': u'a37f9158-7f82-46bc-908c-c9e2dda7c33b',
                     u'awayTeamBatterCount': 11,
@@ -358,8 +358,7 @@ def test():
                     u'homeTeamNickname': u'Crabs',
                     u'inning': 2,
                     u'isPostseason': False,
-                    u'lastUpdate': u"Strike, looking. 1-1",
-                    #u'lastUpdate': u"York Silk hit a triple home run!",
+                    u'lastUpdate': u"York Silk hit a grand slam!",
                     u'outcomes': [],
                     u'phase': 3,
                     u'rules': u'4ae9d46a-5408-460a-84fb-cbd8d03fff6c',
@@ -369,7 +368,7 @@ def test():
                     u'shame': False,
                     u'statsheet': u'ec7b5639-ddff-4ffa-8181-87710bbd02cd',
                     u'terminology': u'b67e9bbb-1495-4e1b-b517-f1444b0a6c8b',
-                    u'topOfInning': False,
+                    u'topOfInning': True,
                 u'weather': 11}
             ]
         },
