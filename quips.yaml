@@ -272,3 +272,13 @@ quips:
       - "caught stealing"
     chance: 0.2
     conditions: '(game.home_score - game.away_score > 5 and game.top_of_inning) or (game.away_score - game.home_score > 5 and not game.top_of_inning)'
+  -
+    phrases:
+      - "Ruthless!"
+      - "{p} looking ruthless today."
+      - "the ruthlessness is strong with {p} today."
+    trigger_after:
+      - "struck out"
+    args:
+      p: 'game.pitching'
+    chance: 0.2
