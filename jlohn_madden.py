@@ -168,9 +168,8 @@ class BlaseballGlame(object):
         self.batting_change = msg['topOfInning'] != self.top_of_inning
         self.top_of_inning = msg['topOfInning']  # true means away team at bat
 
-        team_at_bat = msg['awayTeamNickname'] if self.top_of_inning else msg['homeTeamNickname']
-        if team_at_bat:
-            self.team_at_bat = team_at_bat
+        self.team_at_bat = msg['awayTeamNickname'] if self.top_of_inning else msg['homeTeamNickname']
+        self.pitching_team = msg['homeTeamNickname'] if self.top_of_inning else msg['awayTeamNickname']
         at_bat = msg['awayBatterName'] if self.top_of_inning else msg['homeBatterName']
         pitching = msg['homePitcherName'] if self.top_of_inning else msg['awayPitcherName']
         # sometimes these just clear out, don't overwrite if cached
@@ -358,7 +357,7 @@ def test():
                     u'homeTeamNickname': u'Crabs',
                     u'inning': 2,
                     u'isPostseason': False,
-                    u'lastUpdate': u"York Silk hit a grand slam!",
+                    u'lastUpdate': u"someone was incinerated",
                     u'outcomes': [],
                     u'phase': 3,
                     u'rules': u'4ae9d46a-5408-460a-84fb-cbd8d03fff6c',
