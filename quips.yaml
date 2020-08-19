@@ -282,3 +282,23 @@ quips:
     args:
       p: 'game.pitching'
     chance: 0.2
+  - phrases:
+      - "Now that's blaseball!"
+      - "The fourth strikes back!"
+      - "{tab} making good use of that fourth."
+      - "{pitcher} make that four!"
+    trigger_after:
+      - "struck out"
+    args:
+      tab: "game.team_at_bat"
+      pitcher: "game.ptiching"
+    chance: 0.2
+    conditions: 'game.strikes == 4'
+  -
+    phrases:
+      - "tee gee eye eff folks."
+    trigger_after:
+      - "top of 1"
+      - "bottom of 1"
+    chance: 1.0
+    conditions: 'game.pitching_team == "Fridays"'
