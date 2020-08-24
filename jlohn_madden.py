@@ -14,6 +14,7 @@ import pyaudio
 import yaml
 
 import asyncio
+import pprint
 from aiohttp_sse_client import client as sse_client
 
 
@@ -277,6 +278,8 @@ class Announcer(object):
             for game in message:
                 if self.calling_for in (game['awayTeamNickname'], game['homeTeamNickname']):
                     pbp = self.calling_game.update(game)
+                    if not pbp:
+                        break
                     quips = Quip.say_quips(pbp, self.calling_game)
                     for quip in quips:
                         if quip in self.last_pbps:
@@ -309,10 +312,12 @@ async def sse_loop(cb):
             if delta < 2000:
                 print(schedule)
                 cb(schedule)
+            else:
+                pprint.pprint([s['lastUpdate'] for s in schedule])
 
 
 def main():
-    announcer = Announcer(calling_for='Tigers')
+    announcer = Announcer(calling_for='Fridays')
     loop = asyncio.get_event_loop()
     loop.run_until_complete(sse_loop(announcer.on_message()))
 
@@ -381,19 +386,8 @@ def test():
         },
     ]
 
-    announcer.on_message()(None, '42' + ujson.dumps(test_dump))
+    announcer.on_message()(ujson.dumps(test_dump[1]['schedule']))
     return
-
-
-def test_voices():
-    engine = pyttsx3.init()
-    for voice in engine.getProperty('voices'):
-        if voice.name not in ('Alex', 'Daniel', 'Fiona', 'Karen', 'Maged', 'Yuri'):
-            continue
-        print(voice.id)
-        engine.setProperty('voice', voice.id)
-        engine.say('Sphinx of black quartz, hear my vow!')
-        engine.runAndWait()
 
 
 with open('./quips.yaml', 'r') as __f:
