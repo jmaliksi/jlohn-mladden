@@ -4,7 +4,6 @@ import threading
 import queue
 from concurrent.futures import ThreadPoolExecutor
 from collections import defaultdict
-import websocket
 import ujson
 import pyttsx3
 import requests
