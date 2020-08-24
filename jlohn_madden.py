@@ -13,6 +13,9 @@ import pydub.utils
 import pyaudio
 import yaml
 
+import asyncio
+from aiohttp_sse_client import client as sse_client
+
 
 BLASE_MAP = {
     0: 'first',
@@ -158,7 +161,7 @@ class BlaseballGlame(object):
         # self.game_logs.append(pbp)
         # self.sound_effects(pbp)
 
-        self.id_ = msg['_id']
+        self.id_ = msg['id']
         self.away_team = msg['awayTeamName']
         self.home_team = msg['homeTeamName']
         self.away_score = msg['awayScore']
@@ -265,25 +268,25 @@ class Announcer(object):
         self.voice = pyttsx3.init(debug=True)
         self.voice.connect('started-utterance', self.sound_effect)
 
-        #self.last_play_by_play = ''
+        self.last_pbps = []
 
     def on_message(self):
-        def callback(ws, message):
-            try:
-                message = ujson.loads(message[2:])
-            except Exception:
+        def callback(message):
+            if not message:
                 return
-            if message[0] != 'gameDataUpdate':
-                return
-            for game in message[1]['schedule']:
+            for game in message:
                 if self.calling_for in (game['awayTeamNickname'], game['homeTeamNickname']):
                     pbp = self.calling_game.update(game)
                     quips = Quip.say_quips(pbp, self.calling_game)
                     for quip in quips:
+                        if quip in self.last_pbps:
+                            continue
+                        self.last_pbps.append(quip)
                         self.voice.say(quip, quip)
 
                     break
             self.voice.runAndWait()
+            self.last_pbps = self.last_pbps[-4:]  # avoid last 4 redundancy
         return callback
 
     def sound_effect(self, name):
@@ -295,18 +298,23 @@ class Announcer(object):
                 )
 
 
+async def sse_loop(cb):
+    async with sse_client.EventSource('https://www.blaseball.com/events/streamGameData') as src:
+        async for event in src:
+            payload = ujson.loads(event.data)
+            # TODO set up logger
+            schedule = payload.get('value', {}).get('schedule')
+            delta = time.time() * 1000 - payload['value'].get('lastUpdateTime')
+            print(delta)
+            if delta < 2000:
+                print(schedule)
+                cb(schedule)
+
+
 def main():
-    announcer = Announcer(calling_for='Fridays')
-    while 1:
-        websocket.enableTrace(True)
-        ws = websocket.WebSocketApp(
-            'wss://blaseball.com/socket.io/?EIO=3&transport=websocket',
-            on_message=announcer.on_message(),
-        )
-        exit = ws.run_forever()
-        if exit is False:
-            return
-        time.sleep(0)
+    announcer = Announcer(calling_for='Tigers')
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(sse_loop(announcer.on_message()))
 
 
 def test():
@@ -317,7 +325,7 @@ def test():
         {
             'schedule': [
                 {
-                    u'_id': u'4d26c148-3fe8-4b9a-9f64-7c10a0607423',
+                    u'id': u'4d26c148-3fe8-4b9a-9f64-7c10a0607423',
                     u'atBatBalls': 0,
                     u'atBatStrikes': 0,
                     u'awayBatter': u'',
@@ -396,4 +404,4 @@ with open('./quips.yaml', 'r') as __f:
 
 
 if __name__ == '__main__':
-    test()
+    main()

@@ -1,6 +1,11 @@
+aiohttp==3.6.2
+aiohttp-sse-client==0.1.7
+async-timeout==3.0.1
+attrs==20.1.0
 certifi==2020.6.20
 chardet==3.0.4
 idna==2.10
+multidict==4.7.6
 PyAudio==0.2.11
 pydub==0.24.1
 pyobjc==6.2.2
@@ -121,6 +126,8 @@ pyttsx3==2.7
 PyYAML==5.3.1
 requests==2.24.0
 six==1.15.0
+typing-extensions==3.7.4.3
 ujson==2.0.3
 urllib3==1.25.10
 websocket-client==0.57.0
+yarl==1.5.1
