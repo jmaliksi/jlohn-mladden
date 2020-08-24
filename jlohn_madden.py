@@ -2,7 +2,7 @@ import time
 import random
 import threading
 import queue
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, TimeoutError
 from collections import defaultdict
 import ujson
 import pyttsx3
@@ -145,6 +145,7 @@ class BlaseballGlame(object):
         self.on_blase = ['', '', '']
         self.bases_occupied = 0
         self.team_at_bat = ''
+        self.shame = False
 
         self.last_update = ''
 
@@ -194,6 +195,7 @@ class BlaseballGlame(object):
             for pid, base in zip(msg['baseRunners'], msg['basesOccupied']):
                 player_name = player_names.get(pid)
                 self.on_blase[base] = player_name or 'runner'
+        self.shame = msg['shame']
         print(
             'away: {} {}'.format(self.away_team, self.away_score),
             'home: {} {}'.format(self.home_team, self.home_score),
@@ -276,7 +278,7 @@ class Announcer(object):
         self.last_pbps = []
 
     def on_message(self):
-        def callback(message):
+        def callback(message, last_update_time):
             if not message:
                 return
             for game in message:
@@ -284,7 +286,12 @@ class Announcer(object):
                     pbp = self.calling_game.update(game)
                     if not pbp:
                         break
-                    quips = Quip.say_quips(pbp, self.calling_game)
+                    if time.time() * 1000 - last_update_time > 2000:
+                        # play catch up if we're lagging by focusing on play by play
+                        quips = [pbp.lower()]
+                    else:
+                        quips = Quip.say_quips(pbp, self.calling_game)
+
                     for quip in quips:
                         if quip in self.last_pbps:
                             continue
@@ -306,18 +313,23 @@ class Announcer(object):
 
 
 async def sse_loop(cb):
-    async with sse_client.EventSource('https://www.blaseball.com/events/streamGameData') as src:
-        async for event in src:
-            payload = ujson.loads(event.data)
-            # TODO set up logger
-            schedule = payload.get('value', {}).get('schedule')
-            delta = time.time() * 1000 - payload['value'].get('lastUpdateTime')
-            print(delta)
-            if delta < 2000:
-                print(schedule)
-                cb(schedule)
-            else:
-                pprint.pprint([s['lastUpdate'] for s in schedule])
+    while True:
+        try:
+            async with sse_client.EventSource('https://www.blaseball.com/events/streamGameData') as src:
+                async for event in src:
+                    payload = ujson.loads(event.data)
+                    # TODO set up logger
+                    schedule = payload.get('value', {}).get('schedule')
+                    last_update_time = payload['value'].get('lastUpdateTime')
+                    delta = time.time() * 1000 - last_update_time
+                    print(delta)
+                    if delta < 4000:
+                        # print(schedule)
+                        cb(schedule, last_update_time)
+                    else:
+                        pprint.pprint([s['lastUpdate'] for s in schedule])
+        except (ConnectionError, TimeoutError):
+            pass
 
 
 def main():

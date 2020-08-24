@@ -62,7 +62,17 @@ sound_cues:
       - roar
     delay: 1.2
   -
-    trigger: out
+    trigger: ground out
+    sounds:
+      - crowd
+    delay: 0.3
+  -
+    trigger: struck out
+    sounds:
+      - crowd
+    delay: 0.3
+  -
+    trigger: flyout
     sounds:
       - crowd
     delay: 0.3
@@ -98,9 +108,16 @@ quips:
       ht: 'game.home_team'
       hs: 'game.home_score'
     conditions: 'game.away_score != game.home_score'
+  - phrases:
+    - '{at} leave in shame!'
+    trigger_after:
+      - 'game over'
+    args:
+      at: 'game.away_team'
+    conditions: 'game.shame is True'
   -
     phrases:
-      - '{outs} out{outs_s} left'
+      - '{left} out{left_s} left'
       - '{tab} with {outs} out{outs_s}'
       - '{left} out{left_s} remaining for the {tab}'
       - '{tab} have {outs} out{outs_s}'
@@ -113,6 +130,7 @@ quips:
       outs_s: 'utils.plural(game.outs)'
       left_s: 'utils.plural(3 - game.outs)'
     chance: 0.3
+    conditions: 'game.outs > 0'
   -
     phrases:
       - '{tb} of the {i}'
@@ -124,7 +142,7 @@ quips:
     chance: 0.1
   -
     phrases:
-      - '{outs} out{outs_s} left'
+      - '{left} out{left_s} left'
       - '{tab} with {outs} out{outs_s}'
       - '{left} out{left_s} remaining for the {tab}'
       - '{tab} have {outs} out{outs_s}'
@@ -137,7 +155,7 @@ quips:
       outs_s: 'utils.plural(game.outs)'
       left_s: 'utils.plural(3 - game.outs)'
     chance: 1.0
-    conditions: 'game.outs < 3'
+    conditions: '0 < game.outs < 3'
   -
     phrases:
       - '{p} pitching.'
@@ -156,7 +174,7 @@ quips:
       num: 'game.bases_occupied'
       s: 'utils.plural(game.bases_occupied)'
       who: 'game.runners[-1][0]'
-      base: 'game.runners[-1[1]'
+      base: 'game.runners[-1][1]'
     conditions: '1 < game.bases_occupied < 3'
     chance: 1.0
   -
@@ -302,3 +320,16 @@ quips:
       - "bottom of 1"
     chance: 1.0
     conditions: 'game.pitching_team == "Fridays"'
+  -
+    phrases:
+      - 'And here comes the shame.'
+      - 'What a shame.'
+      - '{tab} with {score} and the shame.'
+      - "They won't let us go home yet!"
+    trigger_after:
+      - 'score'
+    args:
+      tab: 'game.team_at_bat'
+      score: 'game.home_score'
+    chance: 1.0
+    conditions: 'game.shame is True'
