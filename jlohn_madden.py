@@ -34,7 +34,10 @@ class SoundManager(object):
     def __init__(self, sounds):
         self.audio_cues = {}
         for name, config in sounds.items():
-            self.audio_cues[name] = pydub.AudioSegment.from_wav(config['file']) + config['volume']
+            try:
+                self.audio_cues[name] = pydub.AudioSegment.from_wav(config['file']) + config['volume']
+            except Exception:
+                pass
 
         self.sound_pool = ThreadPoolExecutor(max_workers=10)
         self._pyaudio = pyaudio.PyAudio()
@@ -42,6 +45,8 @@ class SoundManager(object):
     def execute_sound(self, key, delay=0):
         if delay:
             time.sleep(delay)
+        if key not in self.audio_cues:
+            return
         seg = self.audio_cues[key]
         stream = self._pyaudio.open(
             format=self._pyaudio.get_format_from_width(seg.sample_width),
