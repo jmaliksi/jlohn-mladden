@@ -122,6 +122,12 @@ quips:
     chance: 0.1
   -
     phrases:
+      - "And that's the ball game."
+      - "And that's game."
+    trigger_before:
+      - "game over"
+  -
+    phrases:
       - '{at} {as}, {ht} {hs}.'
     trigger_after:
       - game over
@@ -355,3 +361,34 @@ quips:
       ab: 'game.team_at_bat'
     conditions: 'game.batting_change'
     chance: 1.0
+  -
+    phrases:
+      - "Fletcher Yamamoto's family has arrived to watch."
+    trigger_after:
+      - 'bird'
+    chance: 0.1
+    conditions: '"Fridays" in (game.home_team, game.away_team)'
+  -
+    phrases:
+      - 'The snack cart strikes again!'
+      - "We've got a thirsty player!"
+    trigger_after:
+      - 'steals third base'
+      - 'stealing third base'
+    conditions: 'game.home_team == "Hawaii Fridays"'
+    chance: 0.5
+  -
+    phrases:
+      - "Baby on base."
+    trigger_after:
+      - "base"
+    chance: 0.1
+    conditions: 'any(("baby" in p for p in game.on_blase))'
+  -
+    phrases:
+      - "Looks like the {tab} have stolen fourth base! What a lot of people don't know is that home base is also known as fourth base. Makes ya wonder what would happen if they had a fifth or sixth base... heh. That'd be wild!"
+    trigger_after:
+      - 'fourth base'
+    chance: 1.0
+    args:
+      tab: 'game.at_bat'
