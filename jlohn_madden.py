@@ -114,12 +114,13 @@ class PlayerNames(object):
             return self._players[id_]
         try:
             player = requests.get('https://blaseball.com/database/players?ids={}'.format(id_))
+            name = player.json()[0].get('name')
+            if name:
+                self._players[id_] = name
+            return name
         except Exception:
             return None
-        name = player.json()[0].get('name')
-        if name:
-            self._players[id_] = name
-        return name
+        return None
 
 
 player_names = PlayerNames()
@@ -269,7 +270,8 @@ class Quip(object):
 
 class Announcer(object):
 
-    def __init__(self, calling_for='Fridays'):
+    def __init__(self, calling_for='Fridays', announcer_config=None):
+        self.main_game = calling_for
         self.calling_for = calling_for
         self.calling_game = BlaseballGlame()
         self.voice = pyttsx3.init(debug=True)
@@ -277,15 +279,51 @@ class Announcer(object):
 
         self.last_pbps = []
 
+        self.default_voice = self.voice.getProperty('voice')
+        self.friend_voices = []
+        if announcer_config:
+            system_voices = [v.id for v in self.voice.getProperty('voices')]
+            for voice in announcer_config.get('default_voice', []):
+                if voice in system_voices:
+                    self.default_voice = voice
+                    break
+            for voice in announcer_config.get('friends', []):
+                if voice in system_voices:
+                    self.friend_voices.append(voice)
+
+    def choose_voice(self):
+        # on game switch
+        # should gracefully fail when IDs aren't valid
+        if not self.friend_voices:
+            return
+
+        if self.calling_for == self.main_game:
+            self.voice.setProperty('voice', self.default_voice)
+            return
+
+        if self.voice.getProperty('voice') != self.default_voice:
+            return
+
+        self.voice.setProperty('voice', random.choice(self.friend_voices))
+
     def on_message(self):
         def callback(message, last_update_time):
             if not message:
-                return
+                return []
             for game in message:
                 if self.calling_for in (game['awayTeamNickname'], game['homeTeamNickname']):
                     pbp = self.calling_game.update(game)
                     if not pbp:
                         break
+
+                    if 'Game over' in pbp and 'game over.' in self.last_pbps:
+                        ng = self.switch_game(message)
+                        if not ng:
+                            return []
+                        self.voice.say(f'Thank you for listening to this {self.main_game} broadcast. Over to {ng}.')
+                        self.choose_voice()
+                        break
+
                     if time.time() * 1000 - last_update_time > 2000:
                         # play catch up if we're lagging by focusing on play by play
                         quips = [pbp.lower()]
@@ -303,7 +341,26 @@ class Announcer(object):
             self.last_pbps = self.last_pbps[-4:]  # avoid last 4 redundancy
         return callback
 
+    def switch_game(self, schedule):
+        candidates = []
+        for game in schedule:
+            pbp = game.get('lastUpdate')
+            if pbp == 'Game over.':
+                continue
+            candidates.append(game)
+        if not candidates:
+            self.calling_for = self.main_game
+            self.choose_voice()  # TODO Clean this dang thing up
+            return None
+
+        # choose game with closest score
+        candidates = sorted(candidates, key=lambda x: abs(x.get('homeScore', 0) - x.get('awayScore', 0)))
+        self.calling_for = candidates[0].get('homeTeamNickname')
+        return self.calling_for
+
     def sound_effect(self, name):
+        if not name:
+            return
         for cue in sound_cues:
             if cue['trigger'] in name:
                 sound_manager.play_sound(
@@ -332,8 +389,8 @@ async def sse_loop(cb):
             pass
 
 
-def main():
-    announcer = Announcer(calling_for='Fridays')
+def main(announcer_config):
+    announcer = Announcer(calling_for='Fridays', announcer_config=announcer_config)
     loop = asyncio.get_event_loop()
     loop.run_until_complete(sse_loop(announcer.on_message()))
 
@@ -411,7 +468,8 @@ with open('./quips.yaml', 'r') as __f:
     sound_manager = SoundManager(__y['sounds'])
     sound_cues = __y['sound_cues']
     Quip.load(__y['quips'])
+    __announcer_config = __y['announcer']
 
 
 if __name__ == '__main__':
-    main()
+    main(__announcer_config)

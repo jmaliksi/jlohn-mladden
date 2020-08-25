@@ -1,4 +1,12 @@
 ---
+announcer:
+  default_voice:
+    - 'com.apple.speech.synthesis.voice.Alex'
+  friends:
+    - 'com.apple.speech.synthesis.voice.daniel'
+    - 'com.apple.speech.synthesis.voice.fiona'
+    - 'com.apple.speech.synthesis.voice.karen'
+
 sounds:
   cheer:
     file: ./media/cheering.wav
@@ -18,8 +26,24 @@ sounds:
   roar:
     file: ./media/roar.wav
     volume: -15
+  incineration:
+    file: ./media/short_incineration.wav
+    volume: -15
+  crowd_oh:
+    file: ./media/crowd_ooh.wav
+    volume: -10
 
 sound_cues:
+  -
+    trigger: incinerated
+    sounds:
+      - incineration
+    delay: 0.0
+  -
+    trigger: incinerated
+    sounds:
+      - crowd_oh
+    delay: 0.0
   -
     trigger: scores
     sounds:
@@ -175,7 +199,7 @@ quips:
       s: 'utils.plural(game.bases_occupied)'
       who: 'game.runners[-1][0]'
       base: 'game.runners[-1][1]'
-    conditions: '1 < game.bases_occupied < 3'
+    conditions: '0 < game.bases_occupied < 3'
     chance: 1.0
   -
     phrases:
@@ -183,15 +207,6 @@ quips:
     trigger_after:
       - 'batting for'
     conditions: 'game.bases_occupied == 3'
-    chance: 1.0
-  -
-    phrases:
-      - '{ab} taking the field'
-    trigger_after:
-      - out
-    args:
-      ab: 'game.team_at_bat'
-    conditions: 'game.batting_change'
     chance: 1.0
   -
     phrases:
@@ -243,7 +258,6 @@ quips:
   -
     phrases:
       - "oh, and that's a bad miss."
-      - "shame."
     trigger_after:
       - 'struck out swinging'
     chance: 0.2
@@ -282,9 +296,8 @@ quips:
       - "nope, you can't do that."
       - "are you kidding me."
       - "yup, that's frustrating."
-      - "shame."
-      - "that's a shame."
       - "woof."
+      - "can't do that."
     trigger_after:
       - "struck out swinging"
       - "caught stealing"
@@ -333,3 +346,12 @@ quips:
       score: 'game.home_score'
     chance: 1.0
     conditions: 'game.shame is True'
+  -
+    phrases:
+      - '{ab} taking the field'
+    trigger_after:
+      - out
+    args:
+      ab: 'game.team_at_bat'
+    conditions: 'game.batting_change'
+    chance: 1.0
