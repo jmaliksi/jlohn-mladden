@@ -357,10 +357,10 @@ quips:
     phrases:
       - 'And here comes the shame.'
       - 'What a shame.'
-      - '{tab} with {score} and the shame.'
       - "They won't let us go home yet!"
     trigger_after:
       - 'score'
+      - 'batting'
     args:
       tab: 'game.team_at_bat'
       score: 'game.home_score'

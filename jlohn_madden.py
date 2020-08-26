@@ -333,7 +333,7 @@ class Announcer(object):
                         self.choose_voice()
                         break
 
-                    if time.time() * 1000 - last_update_time > 2000:
+                    if time.time() * 1000 - last_update_time > 2300:
                         # play catch up if we're lagging by focusing on play by play
                         quips = [pbp.lower()]
                     else:
