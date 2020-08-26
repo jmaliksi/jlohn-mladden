@@ -1,11 +1,20 @@
 ---
 announcer:
   default_voice:
-    - 'com.apple.speech.synthesis.voice.Alex'
+    - 'com.apple.speech.synthesis.voice.daniel.premium'
   friends:
     - 'com.apple.speech.synthesis.voice.daniel'
+    - 'com.apple.speech.synthesis.voice.Alex'
     - 'com.apple.speech.synthesis.voice.fiona'
     - 'com.apple.speech.synthesis.voice.karen'
+    - 'com.apple.speech.synthesis.voice.fiona.premium'
+    - 'com.apple.speech.synthesis.voice.karen.premium'
+    - 'com.apple.speech.synthesis.voice.moira'
+    - 'com.apple.speech.synthesis.voice.rishi'
+    - 'com.apple.speech.synthesis.voice.samantha'
+    - 'com.apple.speech.synthesis.voice.tessa'
+    - 'com.apple.speech.synthesis.voice.veena'
+    - 'com.apple.speech.synthesis.voice.Victoria'
 
 sounds:
   cheer:
@@ -48,17 +57,22 @@ sound_cues:
     trigger: scores
     sounds:
       - cheer
-    delay: 0.1
+    delay: 0.7
+  -
+    trigger: single
+    sounds:
+      - crowd
+    delay: 0.2
   -
     trigger: double
     sounds:
       - cheer
-    delay: 0.1
+    delay: 0.5
   -
     trigger: triple
     sounds:
       - cheer
-    delay: 0.1
+    delay: 1.1
   -
     trigger: hit
     sounds:
@@ -112,7 +126,7 @@ quips:
       - '{pitcher} readying to pitch.'
       - '{batter} waiting for the pitch.'
     trigger_before:
-      - ball
+      - ball.
       - strike
       - hit
       - foul
@@ -159,7 +173,7 @@ quips:
       left: '3 - game.outs'
       outs_s: 'utils.plural(game.outs)'
       left_s: 'utils.plural(3 - game.outs)'
-    chance: 0.3
+    chance: 0.4
     conditions: 'game.outs > 0'
   -
     phrases:
@@ -264,7 +278,7 @@ quips:
   -
     phrases:
       - "oh, and that's a bad miss."
-    trigger_after:
+    trigger_before:
       - 'struck out swinging'
     chance: 0.2
   -
@@ -358,7 +372,7 @@ quips:
     trigger_after:
       - out
     args:
-      ab: 'game.team_at_bat'
+      ab: 'game.pitching_team'
     conditions: 'game.batting_change'
     chance: 1.0
   -
@@ -386,9 +400,7 @@ quips:
     conditions: 'any(("baby" in p for p in game.on_blase))'
   -
     phrases:
-      - "Looks like the {tab} have stolen fourth base! What a lot of people don't know is that home base is also known as fourth base. Makes ya wonder what would happen if they had a fifth or sixth base... heh. That'd be wild!"
+      - "What a lot of people don't know is that home base is also known as fourth base. Makes ya wonder what would happen if they had a fifth or sixth base... heh. That'd be wild!"
     trigger_after:
       - 'fourth base'
     chance: 1.0
-    args:
-      tab: 'game.at_bat'

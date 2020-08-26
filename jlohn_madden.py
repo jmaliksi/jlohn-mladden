@@ -15,6 +15,7 @@ import yaml
 import asyncio
 import pprint
 from aiohttp_sse_client import client as sse_client
+from aiohttp.client_exceptions import ClientPayloadError
 
 
 BLASE_MAP = {
@@ -149,6 +150,7 @@ class BlaseballGlame(object):
         self.shame = False
 
         self.last_update = ''
+        self.day = ''
 
     @property
     def has_runners(self):
@@ -169,6 +171,7 @@ class BlaseballGlame(object):
         # self.sound_effects(pbp)
 
         self.id_ = msg['id']
+        self.day = msg['day'] + 1
         self.away_team = msg['awayTeamName']
         self.home_team = msg['homeTeamName']
         self.away_score = msg['awayScore']
@@ -290,21 +293,27 @@ class Announcer(object):
             for voice in announcer_config.get('friends', []):
                 if voice in system_voices:
                     self.friend_voices.append(voice)
+        self.voice.setProperty('voice', random.choice(self.friend_voices + [self.default_voice]))
 
     def choose_voice(self):
         # on game switch
         # should gracefully fail when IDs aren't valid
+        '''
         if not self.friend_voices:
             return
 
         if self.calling_for == self.main_game:
-            self.voice.setProperty('voice', self.default_voice)
+            self.voice.setProperty('voice', random.choice([self.default_voice] + self.friend_voices))
             return
 
         if self.voice.getProperty('voice') != self.default_voice:
             return
 
         self.voice.setProperty('voice', random.choice(self.friend_voices))
+        '''
+        cur_voice = self.voice.getProperty('voice')
+        voices = [v for v in (self.friend_voices + [self.default_voice]) if v != cur_voice]
+        self.voice.setProperty('voice', random.choice(voices))
 
     def on_message(self):
         def callback(message, last_update_time):
@@ -350,7 +359,7 @@ class Announcer(object):
             candidates.append(game)
         if not candidates:
             self.calling_for = self.main_game
-            self.choose_voice()  # TODO Clean this dang thing up
+            #self.choose_voice()  # TODO Clean this dang thing up
             return None
 
         # choose game with closest score
@@ -385,7 +394,7 @@ async def sse_loop(cb):
                         cb(schedule, last_update_time)
                     else:
                         pprint.pprint([s['lastUpdate'] for s in schedule])
-        except (ConnectionError, TimeoutError):
+        except (ConnectionError, TimeoutError, ClientPayloadError):
             pass
 
 
