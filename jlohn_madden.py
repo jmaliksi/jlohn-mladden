@@ -330,7 +330,7 @@ class Announcer(object):
                         ng = self.switch_game(message)
                         if not ng:
                             return []
-                        update = f'Thank you for listening to this {self.calling_for} broadcast. Over to {ng}.'
+                        update = f'Thank you for listening to this {self.main_game} broadcast. Over to {ng}.'
                         print(update)
                         self.voice.say(update)
                         self.choose_voice()

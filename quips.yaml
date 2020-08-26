@@ -40,7 +40,7 @@ sounds:
     volume: -15
   crowd_oh:
     file: ./media/crowd_ooh.wav
-    volume: -10
+    volume: -15
 
 sound_cues:
   -
@@ -119,6 +119,11 @@ sound_cues:
     sounds:
       - roar
     delay: 1.1
+  -
+    trigger: caught stealing
+    sounds:
+      - crowd_oh
+    delay: 1.0
 
 quips:
   -
@@ -234,6 +239,12 @@ quips:
       - '{lt} up {ls} {us}.'
     trigger_after:
       - 'out'
+      - 'score'
+      - 'single'
+      - 'double'
+      - 'triple'
+      - 'home run'
+      - 'grand slam'
     args:
       at: 'game.away_team'
       as: 'game.away_score'
