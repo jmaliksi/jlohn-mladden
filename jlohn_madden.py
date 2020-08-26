@@ -10,6 +10,7 @@ import requests
 import pydub
 import pydub.utils
 import pyaudio
+import sys
 import yaml
 
 import asyncio
@@ -85,7 +86,7 @@ class SoundManager(object):
             p.terminate()
 
     def play_sound(self, key, delay=0):
-        print(key)
+        print(key, file=sys.stderr)
         self.sound_pool.submit(self.execute_sound, key, delay=delay)
 
 
@@ -208,8 +209,8 @@ class BlaseballGlame(object):
             'pitching: {}'.format(self.pitching),
             's|b|o {}|{}|{}'.format(self.strikes, self.balls, self.outs),
             self.on_blase,
+            file=sys.stderr,
         )
-        print(pbp)
         self.last_update = pbp
         return pbp
 
@@ -329,7 +330,9 @@ class Announcer(object):
                         ng = self.switch_game(message)
                         if not ng:
                             return []
-                        self.voice.say(f'Thank you for listening to this {self.main_game} broadcast. Over to {ng}.')
+                        update = f'Thank you for listening to this {self.calling_for} broadcast. Over to {ng}.'
+                        print(update)
+                        self.voice.say(update)
                         self.choose_voice()
                         break
 
@@ -343,6 +346,7 @@ class Announcer(object):
                         if quip in self.last_pbps:
                             continue
                         self.last_pbps.append(quip)
+                        print(quip)
                         self.voice.say(quip, quip)
 
                     break
@@ -388,12 +392,13 @@ async def sse_loop(cb):
                     schedule = payload.get('value', {}).get('schedule')
                     last_update_time = payload['value'].get('lastUpdateTime')
                     delta = time.time() * 1000 - last_update_time
-                    print(delta)
+                    print(delta, file=sys.stderr)
                     if delta < 4000:
-                        # print(schedule)
                         cb(schedule, last_update_time)
+                    '''
                     else:
                         pprint.pprint([s['lastUpdate'] for s in schedule])
+                    '''
         except (ConnectionError, TimeoutError, ClientPayloadError):
             pass
 
