@@ -283,38 +283,16 @@ class Announcer(object):
 
         self.last_pbps = []
 
-        self.default_voice = self.voice.getProperty('voice')
-        self.friend_voices = []
+        voice_ids = set([self.voice.getProperty('voice')])
         if announcer_config:
+            self.main_game = announcer_config['calling_for']
+            self.calling_for = announcer_config['calling_for']
             system_voices = [v.id for v in self.voice.getProperty('voices')]
-            for voice in announcer_config.get('default_voice', []):
-                if voice in system_voices:
-                    self.default_voice = voice
-                    break
             for voice in announcer_config.get('friends', []):
                 if voice in system_voices:
-                    self.friend_voices.append(voice)
-        self.voice.setProperty('voice', random.choice(self.friend_voices + [self.default_voice]))
-
-    def choose_voice(self):
-        # on game switch
-        # should gracefully fail when IDs aren't valid
-        '''
-        if not self.friend_voices:
-            return
-
-        if self.calling_for == self.main_game:
-            self.voice.setProperty('voice', random.choice([self.default_voice] + self.friend_voices))
-            return
-
-        if self.voice.getProperty('voice') != self.default_voice:
-            return
-
-        self.voice.setProperty('voice', random.choice(self.friend_voices))
-        '''
-        cur_voice = self.voice.getProperty('voice')
-        voices = [v for v in (self.friend_voices + [self.default_voice]) if v != cur_voice]
-        self.voice.setProperty('voice', random.choice(voices))
+                    voice_ids.add(voice)
+        self.voice_ids = list(voice_ids)
+        self.voice.setProperty('voice', random.choice(self.voice_ids))
 
     def on_message(self):
         def callback(message, last_update_time):
@@ -327,14 +305,8 @@ class Announcer(object):
                         break
 
                     if 'Game over' in pbp and 'game over.' in self.last_pbps:
-                        ng = self.switch_game(message)
-                        if not ng:
-                            return []
-                        update = f'Thank you for listening to this {self.main_game} broadcast. Over to {ng}.'
-                        print(update)
-                        self.voice.say(update)
-                        self.choose_voice()
-                        break
+                        self.switch_game(message)
+                        return
 
                     if time.time() * 1000 - last_update_time > 2300:
                         # play catch up if we're lagging by focusing on play by play
@@ -363,12 +335,23 @@ class Announcer(object):
             candidates.append(game)
         if not candidates:
             self.calling_for = self.main_game
-            #self.choose_voice()  # TODO Clean this dang thing up
             return None
 
         # choose game with closest score
         candidates = sorted(candidates, key=lambda x: abs(x.get('homeScore', 0) - x.get('awayScore', 0)))
-        self.calling_for = candidates[0].get('homeTeamNickname')
+
+        next_game = candidates[0].get('homeTeamNickname')
+        update = f'Thank you for listening to this {self.calling_for} broadcast. Over to {next_game}.'
+        print(update)
+        self.voice.say(update)
+        self.voice.runAndWait()
+
+        cur_voice = self.voice.getProperty('voice')
+        voices = [v for v in self.voice_ids if v != cur_voice]
+        self.voice.setProperty('voice', random.choice(voices))
+
+        self.calling_for = next_game
+        self.last_pbps = []
         return self.calling_for
 
     def sound_effect(self, name):
@@ -390,7 +373,7 @@ async def sse_loop(cb):
                     payload = ujson.loads(event.data)
                     # TODO set up logger
                     schedule = payload.get('value', {}).get('schedule')
-                    last_update_time = payload['value'].get('lastUpdateTime')
+                    last_update_time = payload['value'].get('lastUpdateTime', 0)
                     delta = time.time() * 1000 - last_update_time
                     print(delta, file=sys.stderr)
                     if delta < 4000:
@@ -404,7 +387,7 @@ async def sse_loop(cb):
 
 
 def main(announcer_config):
-    announcer = Announcer(calling_for='Fridays', announcer_config=announcer_config)
+    announcer = Announcer(announcer_config=announcer_config)
     loop = asyncio.get_event_loop()
     loop.run_until_complete(sse_loop(announcer.on_message()))
 

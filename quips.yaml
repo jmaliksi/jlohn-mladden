@@ -1,9 +1,9 @@
 ---
 announcer:
-  default_voice:
-    - 'com.apple.speech.synthesis.voice.daniel.premium'
+  calling_for: Fridays
   friends:
     - 'com.apple.speech.synthesis.voice.daniel'
+    - 'com.apple.speech.synthesis.voice.daniel.premium'
     - 'com.apple.speech.synthesis.voice.Alex'
     - 'com.apple.speech.synthesis.voice.fiona'
     - 'com.apple.speech.synthesis.voice.karen'
@@ -415,3 +415,20 @@ quips:
     trigger_after:
       - 'fourth base'
     chance: 1.0
+  -
+    phrases:
+      - "Welcome this broadcast of {at} at {ht}. I'm your host, Jlohn Mladden, ready for another beautiful day of blaseball."
+    trigger_before:
+      - 'play ball!'
+    args:
+      at: 'game.away_team'
+      ht: 'game.home_team'
+    chance: 1.0
+  -
+    phrases:
+      - "Can you feel the heat?"
+      - "Felt the heat off that one!"
+    trigger_after:
+      - "struck out"
+    conditions: 'game.pitching == "Stevenson Heat"'
+    chance: 0.25
