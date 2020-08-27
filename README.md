@@ -11,6 +11,8 @@ pip install -r requirements.txt
 
 On OSX, you'll also need to install `pyobjc`. Or you can install `requirements_osx.txt`.
 
+You will need to have python 3.6+ installed
+
 ## Usage
 ```
 python jlohn_madden.py
