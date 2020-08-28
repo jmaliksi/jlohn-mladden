@@ -289,10 +289,12 @@ class DiscordAnnouncer(object):
 
 
 async def sse_loop(cb):
+    retry_delay = 0.1
     while True:
         try:
             async with sse_client.EventSource('https://www.blaseball.com/events/streamData') as src:
                 async for event in src:
+                    retry_delay = 0.1  # reset backoff
                     payload = ujson.loads(event.data)
                     # TODO set up logger
                     schedule = payload.get('value', {}).get('games', {}).get('schedule')
@@ -304,12 +306,9 @@ async def sse_loop(cb):
                     # print(delta, file=sys.stderr)
                     # if delta < 4000:
                     cb(schedule, time.time() * 1000)
-                    '''
-                    else:
-                        pprint.pprint([s['lastUpdate'] for s in schedule])
-                    '''
         except (ConnectionError, TimeoutError, ClientPayloadError):
-            pass
+            time.sleep(retry_delay)
+            retry_delay = min(retry_delay * 2, 300)
 
 
 def main(announcer_config):
