@@ -351,6 +351,7 @@ class TTSAnnouncer(Announcer):
         self.voice.setProperty('voice', random.choice(self.voice_ids))
 
         self.splorts_center = None
+        self.enable_splorts_center = announcer_config.get('enable_splorts_center')
 
     def on_message(self):
         def callback(message, last_update_time):
@@ -390,6 +391,8 @@ class TTSAnnouncer(Announcer):
         return callback
 
     def engage_splorts_center(self):
+        if not self.enable_splorts_center:
+            return
         if not self.splorts_center or \
                 self.calling_game.day != self.splorts_center.day or \
                 self.calling_game.season != self.splorts_center.season:
@@ -400,6 +403,7 @@ class TTSAnnouncer(Announcer):
             self.switch_voice()
         update = self.splorts_center.next_update()
         print(update)
+        sound_manager.play_sound('splorts_update')
         self.voice.say(update)
         self.voice.runAndWait()
 
