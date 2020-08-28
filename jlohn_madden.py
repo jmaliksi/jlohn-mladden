@@ -42,7 +42,6 @@ class SplortsCenter(object):
         for game in res.json():
             home_team = game['homeTeamName']
             away_team = game['awayTeamName']
-            self.updates.append(f'{away_team} at {home_team}, game {game["seriesIndex"]} of {game["seriesLength"]}')
 
             home_score = game['homeScore']
             away_score = game['awayScore']
@@ -51,7 +50,10 @@ class SplortsCenter(object):
             losing_team = home_team if home_score < away_score else away_team
             losing_score = home_score if home_score < away_score else away_score
 
-            self.updates.append(f'The {winning_team} defeat the {losing_team} {winning_score} to {losing_score}')
+            self.updates.append(
+                f'{away_team} at {home_team}, game {game["seriesIndex"]} of {game["seriesLength"]}.' +
+                f'The {winning_team} defeat the {losing_team} {winning_score} to {losing_score}'
+            )
 
             for outcome in game.get('outcomes', []):
                 self.updates.append(outcome)
