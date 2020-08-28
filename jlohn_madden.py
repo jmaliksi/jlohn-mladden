@@ -199,7 +199,7 @@ class BlaseballGlame(object):
         self.shame = False
 
         self.last_update = ''
-        self.day = ''
+        self.day = 0
         self.season = 0
 
     @property
@@ -341,6 +341,8 @@ class TTSAnnouncer(Announcer):
 
         voice_ids = set([self.voice.getProperty('voice')])
         if announcer_config:
+            self.main_game = announcer_config['calling_for']
+            self.calling_for = announcer_config['calling_for']
             system_voices = [v.id for v in self.voice.getProperty('voices')]
             for voice in announcer_config.get('friends', []):
                 if voice in system_voices:
