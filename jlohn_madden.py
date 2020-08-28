@@ -25,6 +25,47 @@ BLASE_MAP = {
     2: 'third',
 }
 
+class SplortsCenter(object):
+
+    def __init__(self, season, day):
+        self.season = season
+        self.day = day
+        self.updates = []
+
+    def load_ticker(self):
+        res = requests.get('https://www.blaseball.com/database/globalEvents')
+        for msg in res.json():
+            self.updates.append(msg['msg'])
+
+    def load_results(self):
+        res = requests.get(f'https://www.blaseball.com/database/games?season={self.season - 1}&day={self.day - 1}')
+        for game in res.json():
+            home_team = game['homeTeamName']
+            away_team = game['awayTeamName']
+            self.updates.append(f'{away_team} at {home_team}, game {game["seriesIndex"]} of {game["seriesLength"]}')
+
+            home_score = game['homeScore']
+            away_score = game['awayScore']
+            winning_team = home_team if home_score > away_score else away_team
+            winning_score = home_score if home_score > away_score else away_score
+            losing_team = home_team if home_score < away_score else away_team
+            losing_score = home_score if home_score < away_score else away_score
+
+            self.updates.append(f'The {winning_team} defeat the {losing_team} {winning_score} to {losing_score}')
+
+            for outcome in game.get('outcomes', []):
+                self.updates.append(outcome)
+
+    def next_update(self):
+        if not self.updates:
+            self.updates = []
+            self.load_results()
+            self.load_ticker()
+            self.updates = sorted(self.updates, key=lambda _: random.random())
+            self.updates.insert(0, f'And that concludes day {self.day} of season {self.season}. Welcome to Splorts Center.')
+        return self.updates.pop(0)
+
+
 class UniqueList(list):
     def append(self, value):
         if value not in self:
@@ -151,7 +192,8 @@ class BlaseballGlame(object):
         self.shame = False
 
         self.last_update = ''
-        self.day = ''
+        self.day = 0
+        self.season = 0
 
     @property
     def has_runners(self):
@@ -173,6 +215,7 @@ class BlaseballGlame(object):
 
         self.id_ = msg['id']
         self.day = msg['day'] + 1
+        self.season = msg['season'] + 1
         self.away_team = msg['awayTeamName']
         self.home_team = msg['homeTeamName']
         self.away_score = msg['awayScore']
@@ -294,6 +337,8 @@ class Announcer(object):
         self.voice_ids = list(voice_ids)
         self.voice.setProperty('voice', random.choice(self.voice_ids))
 
+        self.splorts_center = None
+
     def on_message(self):
         def callback(message, last_update_time):
             if not message:
@@ -304,11 +349,16 @@ class Announcer(object):
                     if not pbp:
                         break
 
+                    if 'Play ball!' in pbp:
+                        self.switch_voice()
+
                     if 'Game over' in pbp and 'game over.' in self.last_pbps:
-                        self.switch_game(message)
+                        has_game = self.switch_game(message)
+                        if not has_game:
+                            self.engage_splorts_center()
                         return
 
-                    if time.time() * 1000 - last_update_time > 2300:
+                    if time.time() * 1000 - last_update_time > 3000:
                         # play catch up if we're lagging by focusing on play by play
                         quips = [pbp.lower()]
                     else:
@@ -325,6 +375,20 @@ class Announcer(object):
             self.voice.runAndWait()
             self.last_pbps = self.last_pbps[-4:]  # avoid last 4 redundancy
         return callback
+
+    def engage_splorts_center(self):
+        if not self.splorts_center or \
+                self.calling_game.day != self.splorts_center.day or \
+                self.calling_game.season != self.splorts_center.season:
+            self.splorts_center = SplortsCenter(
+                self.calling_game.season,
+                self.calling_game.day,
+            )
+            self.switch_voice()
+        update = self.splorts_center.next_update()
+        print(update)
+        self.voice.say(update)
+        self.voice.runAndWait()
 
     def switch_game(self, schedule):
         candidates = []
@@ -345,14 +409,17 @@ class Announcer(object):
         print(update)
         self.voice.say(update)
         self.voice.runAndWait()
-
-        cur_voice = self.voice.getProperty('voice')
-        voices = [v for v in self.voice_ids if v != cur_voice]
-        self.voice.setProperty('voice', random.choice(voices))
+        self.switch_voice()
 
         self.calling_for = next_game
         self.last_pbps = []
         return self.calling_for
+
+    def switch_voice(self):
+        cur_voice = self.voice.getProperty('voice')
+        voices = [v for v in self.voice_ids if v != cur_voice]
+        if voices:
+            self.voice.setProperty('voice', random.choice(voices))
 
     def sound_effect(self, name):
         if not name:

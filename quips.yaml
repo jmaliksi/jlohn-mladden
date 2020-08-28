@@ -19,10 +19,10 @@ announcer:
 sounds:
   cheer:
     file: ./media/cheering.wav
-    volume: -17
+    volume: -16
   crowd:
     file: ./media/crowd_applause.wav
-    volume: -20
+    volume: -18
   bat_hit:
     file: ./media/bat_hit.wav
     volume: -10
@@ -34,13 +34,13 @@ sounds:
     volume: -10
   roar:
     file: ./media/roar.wav
-    volume: -15
+    volume: -13
   incineration:
     file: ./media/short_incineration.wav
     volume: -15
   crowd_oh:
     file: ./media/crowd_ooh.wav
-    volume: -15
+    volume: -13
 
 sound_cues:
   -
@@ -124,6 +124,16 @@ sound_cues:
     sounds:
       - crowd_oh
     delay: 1.0
+  -
+    trigger: "play ball"
+    sounds:
+      - roar
+    delay: 0
+  -
+    trigger: welcome
+    sounds:
+      - crowd
+    delay: 0
 
 quips:
   -
