@@ -437,16 +437,19 @@ class Announcer(object):
 async def sse_loop(cb):
     while True:
         try:
-            async with sse_client.EventSource('https://www.blaseball.com/events/streamGameData') as src:
+            async with sse_client.EventSource('https://www.blaseball.com/events/streamData') as src:
                 async for event in src:
                     payload = ujson.loads(event.data)
                     # TODO set up logger
-                    schedule = payload.get('value', {}).get('schedule')
-                    last_update_time = payload['value'].get('lastUpdateTime', 0)
-                    delta = time.time() * 1000 - last_update_time
-                    print(delta, file=sys.stderr)
-                    if delta < 4000:
-                        cb(schedule, last_update_time)
+                    schedule = payload.get('value', {}).get('games', {}).get('schedule')
+                    if not schedule:
+                        continue
+                    # whyyyyy
+                    # last_update_time = payload['value'].get('lastUpdateTime', 0)
+                    # delta = time.time() * 1000 - last_update_time
+                    # print(delta, file=sys.stderr)
+                    # if delta < 4000:
+                    cb(schedule, time.time() * 1000)
                     '''
                     else:
                         pprint.pprint([s['lastUpdate'] for s in schedule])

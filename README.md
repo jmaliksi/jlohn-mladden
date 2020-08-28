@@ -13,6 +13,12 @@ On OSX, you'll also need to install `pyobjc`. Or you can install `requirements_o
 
 You will need to have python 3.6+ installed
 
+On Windows:
+
+If pyaudio fails, install pipwin first `pip install pipwin`
+then `pipwin install pyaudio`
+If ujson fails, install VS C++ Build Tools
+
 ## Usage
 ```
 python jlohn_madden.py
