@@ -1,5 +1,7 @@
 ---
 announcer:
+  calling_for: Millennials
+  announcer_type: discord
   default_voice:
     - 'com.apple.speech.synthesis.voice.daniel.premium'
   friends:
