@@ -1,6 +1,7 @@
 ---
 announcer:
   calling_for: Fridays
+  enable_splorts_center: true
   friends:
     - 'com.apple.speech.synthesis.voice.daniel'
     - 'com.apple.speech.synthesis.voice.daniel.premium'
@@ -41,6 +42,9 @@ sounds:
   crowd_oh:
     file: ./media/crowd_ooh.wav
     volume: -13
+  splorts_update:
+    file: ./media/stinger.wav
+    volume: 0
 
 sound_cues:
   -
