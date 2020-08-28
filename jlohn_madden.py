@@ -458,7 +458,7 @@ async def sse_loop(cb):
                     cb(schedule, time.time() * 1000)
         except (ConnectionError, TimeoutError, ClientPayloadError):
             time.sleep(retry_delay)
-            retry_delay *= 2
+            retry_delay = min(retry_delay * 2, 300)
 
 
 def main(announcer_config):
