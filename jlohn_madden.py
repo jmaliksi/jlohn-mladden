@@ -341,8 +341,6 @@ class TTSAnnouncer(Announcer):
 
         voice_ids = set([self.voice.getProperty('voice')])
         if announcer_config:
-            self.main_game = announcer_config['calling_for']
-            self.calling_for = announcer_config['calling_for']
             system_voices = [v.id for v in self.voice.getProperty('voices')]
             for voice in announcer_config.get('friends', []):
                 if voice in system_voices:
@@ -460,7 +458,8 @@ class DiscordAnnouncer(Announcer):
         self.voice_channel_id = int(os.getenv("DISCORD_VOICE_CHANNEL", 0))
         self.client = discord.Client()
         self.ready = False
-        self.prefix = "$say "
+        if announcer_config:
+            self.prefix = announcer_config.get('discord_prefix', "")
 
         @self.client.event
         async def on_ready():

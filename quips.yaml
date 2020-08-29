@@ -2,6 +2,7 @@
 announcer:
   calling_for: Millennials
   announcer_type: discord
+  discord_prefix: '$say '
   enable_splorts_center: false
   friends:
     - 'com.apple.speech.synthesis.voice.daniel'
