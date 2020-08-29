@@ -5,7 +5,11 @@ import queue
 from concurrent.futures import ThreadPoolExecutor, TimeoutError
 from collections import defaultdict
 import ujson
+import pyttsx3
 import requests
+import pydub
+import pydub.utils
+import pyaudio
 import sys
 import yaml
 
@@ -26,10 +30,112 @@ BLASE_MAP = {
     2: 'third',
 }
 
+class SplortsCenter(object):
+
+    def __init__(self, season, day):
+        self.season = season
+        self.day = day
+        self.updates = []
+
+    def load_ticker(self):
+        res = requests.get('https://www.blaseball.com/database/globalEvents')
+        for msg in res.json():
+            self.updates.append(msg['msg'].lower())
+
+    def load_results(self):
+        res = requests.get(f'https://www.blaseball.com/database/games?season={self.season - 1}&day={self.day - 1}')
+        for game in res.json():
+            home_team = game['homeTeamName']
+            away_team = game['awayTeamName']
+
+            home_score = game['homeScore']
+            away_score = game['awayScore']
+            winning_team = home_team if home_score > away_score else away_team
+            winning_score = home_score if home_score > away_score else away_score
+            losing_team = home_team if home_score < away_score else away_team
+            losing_score = home_score if home_score < away_score else away_score
+
+            self.updates.append(
+                f'{away_team} at {home_team}, game {game["seriesIndex"]} of {game["seriesLength"]}. ' +
+                f'The {winning_team} defeat the {losing_team} {winning_score} to {losing_score}'
+            )
+
+            for outcome in game.get('outcomes', []):
+                self.updates.append(outcome)
+
+    def next_update(self):
+        if not self.updates:
+            self.updates = []
+            self.load_results()
+            self.load_ticker()
+            self.updates = sorted(self.updates, key=lambda _: random.random())
+            self.updates.insert(0, f'And that concludes day {self.day} of season {self.season}. Welcome to Splorts Center.')
+        return self.updates.pop(0)
+
+
 class UniqueList(list):
     def append(self, value):
         if value not in self:
             super(UniqueList, self).append(value)
+
+
+class SoundManager(object):
+
+    def __init__(self, sounds):
+        self.audio_cues = {}
+        for name, config in sounds.items():
+            try:
+                self.audio_cues[name] = pydub.AudioSegment.from_wav(config['file']) + config['volume']
+            except Exception:
+                pass
+
+        self.sound_pool = ThreadPoolExecutor(max_workers=10)
+        self._pyaudio = pyaudio.PyAudio()
+
+    def execute_sound(self, key, delay=0):
+        if delay:
+            time.sleep(delay)
+        if key not in self.audio_cues:
+            return
+        seg = self.audio_cues[key]
+        stream = self._pyaudio.open(
+            format=self._pyaudio.get_format_from_width(seg.sample_width),
+            channels=seg.channels,
+            rate=seg.frame_rate,
+            output=True,
+        )
+        try:
+            for chunk in pydub.utils.make_chunks(seg, 500):
+                stream.write(chunk._data)
+        finally:
+            stream.stop_stream()
+            stream.close()
+
+    def run_sound(self):
+        p = pyaudio.PyAudio()
+        stream = None
+        try:
+            while True:
+                try:
+                    sample = self.q.get()
+                    stream = p.open(
+                        format=p.get_format_from_width(sample.sample_width),
+                        channels=sample.channels,
+                        rate=sample.frame_rate,
+                        output=True,
+                    )
+                    for chunk in pydub.utils.make_chunks(sample, 500):
+                        stream.write(chunk._data)
+                        thread.sleep(0)
+                finally:
+                    stream.stop_stream()
+                    stream.close()
+        finally:
+            p.terminate()
+
+    def play_sound(self, key, delay=0):
+        print(key, file=sys.stderr)
+        self.sound_pool.submit(self.execute_sound, key, delay=delay)
 
 
 class utils(object):
@@ -93,7 +199,8 @@ class BlaseballGlame(object):
         self.shame = False
 
         self.last_update = ''
-        self.day = ''
+        self.day = 0
+        self.season = 0
 
     @property
     def has_runners(self):
@@ -115,6 +222,7 @@ class BlaseballGlame(object):
 
         self.id_ = msg['id']
         self.day = msg['day'] + 1
+        self.season = msg['season'] + 1
         self.away_team = msg['awayTeamName']
         self.home_team = msg['homeTeamName']
         self.away_score = msg['awayScore']
@@ -143,16 +251,16 @@ class BlaseballGlame(object):
                 player_name = player_names.get(pid)
                 self.on_blase[base] = player_name or 'runner'
         self.shame = msg['shame']
-        # print(
-        #     'away: {} {}'.format(self.away_team, self.away_score),
-        #     'home: {} {}'.format(self.home_team, self.home_score),
-        #     'inning: {}'.format(self.inning),
-        #     'at_bat: {}'.format(self.at_bat),
-        #     'pitching: {}'.format(self.pitching),
-        #     's|b|o {}|{}|{}'.format(self.strikes, self.balls, self.outs),
-        #     self.on_blase,
-        #     file=sys.stderr,
-        # )
+        print(
+            'away: {} {}'.format(self.away_team, self.away_score),
+            'home: {} {}'.format(self.home_team, self.home_score),
+            'inning: {}'.format(self.inning),
+            'at_bat: {}'.format(self.at_bat),
+            'pitching: {}'.format(self.pitching),
+            's|b|o {}|{}|{}'.format(self.strikes, self.balls, self.outs),
+            self.on_blase,
+            file=sys.stderr,
+        )
         self.last_update = pbp
         return pbp
 
@@ -213,19 +321,143 @@ class Quip(object):
             args[key] = eval(equation, {}, {'game': game, 'utils': utils})
         return random.choice(self.phrases).format(**args)
 
-
-class DiscordAnnouncer(object):
-
-    def __init__(self, calling_for='Millennials', announcer_config=None):
+class Announcer(object):
+    def __init__(self, calling_for='Fridays', announcer_config=None):
         self.main_game = calling_for
         self.calling_for = calling_for
         self.calling_game = BlaseballGlame()
         self.last_pbps = []
+        if announcer_config:
+            self.main_game = announcer_config['calling_for']
+            self.calling_for = announcer_config['calling_for']
+
+
+class TTSAnnouncer(Announcer):
+    def __init__(self, calling_for='Fridays', announcer_config=None):
+        super().__init__(calling_for=calling_for, announcer_config=announcer_config)
+        self.calling_game = BlaseballGlame()
+        self.voice = pyttsx3.init(debug=True)
+        self.voice.connect('started-utterance', self.sound_effect)
+
+        voice_ids = set([self.voice.getProperty('voice')])
+        if announcer_config:
+            self.main_game = announcer_config['calling_for']
+            self.calling_for = announcer_config['calling_for']
+            system_voices = [v.id for v in self.voice.getProperty('voices')]
+            for voice in announcer_config.get('friends', []):
+                if voice in system_voices:
+                    voice_ids.add(voice)
+        self.voice_ids = list(voice_ids)
+        self.voice.setProperty('voice', random.choice(self.voice_ids))
+
+        self.splorts_center = None
+        self.enable_splorts_center = announcer_config.get('enable_splorts_center')
+
+    def on_message(self):
+        def callback(message, last_update_time):
+            if not message:
+                return []
+            for game in message:
+                if self.calling_for in (game['awayTeamNickname'], game['homeTeamNickname']):
+                    pbp = self.calling_game.update(game)
+                    if not pbp:
+                        break
+
+                    if 'Play ball!' in pbp:
+                        self.switch_voice()
+
+                    if 'Game over' in pbp and 'game over.' in self.last_pbps:
+                        has_game = self.switch_game(message)
+                        if not has_game:
+                            self.engage_splorts_center()
+                        return
+
+                    if time.time() * 1000 - last_update_time > 3000:
+                        # play catch up if we're lagging by focusing on play by play
+                        quips = [pbp.lower()]
+                    else:
+                        quips = Quip.say_quips(pbp, self.calling_game)
+
+                    for quip in quips:
+                        if quip in self.last_pbps:
+                            continue
+                        self.last_pbps.append(quip)
+                        print(quip)
+                        self.voice.say(quip, quip)
+
+                    break
+            self.voice.runAndWait()
+            self.last_pbps = self.last_pbps[-4:]  # avoid last 4 redundancy
+        return callback
+
+    def engage_splorts_center(self):
+        if not self.enable_splorts_center:
+            return
+        if not self.splorts_center or \
+                self.calling_game.day != self.splorts_center.day or \
+                self.calling_game.season != self.splorts_center.season:
+            self.splorts_center = SplortsCenter(
+                self.calling_game.season,
+                self.calling_game.day,
+            )
+            self.switch_voice()
+        update = self.splorts_center.next_update()
+        print(update)
+        sound_manager.play_sound('splorts_update')
+        self.voice.say(update)
+        self.voice.runAndWait()
+
+    def switch_game(self, schedule):
+        candidates = []
+        for game in schedule:
+            pbp = game.get('lastUpdate')
+            if pbp == 'Game over.':
+                continue
+            candidates.append(game)
+        if not candidates:
+            self.calling_for = self.main_game
+            return None
+
+        # choose game with closest score
+        candidates = sorted(candidates, key=lambda x: abs(x.get('homeScore', 0) - x.get('awayScore', 0)))
+
+        next_game = candidates[0].get('homeTeamNickname')
+        update = f'Thank you for listening to this {self.calling_for} broadcast. Over to {next_game}.'
+        print(update)
+        self.voice.say(update)
+        self.voice.runAndWait()
+        self.switch_voice()
+
+        self.calling_for = next_game
+        self.last_pbps = []
+        return self.calling_for
+
+    def switch_voice(self):
+        cur_voice = self.voice.getProperty('voice')
+        voices = [v for v in self.voice_ids if v != cur_voice]
+        if voices:
+            self.voice.setProperty('voice', random.choice(voices))
+
+    def sound_effect(self, name):
+        if not name:
+            return
+        for cue in sound_cues:
+            if cue['trigger'] in name:
+                sound_manager.play_sound(
+                    random.choice(cue['sounds']),
+                    delay=cue['delay'],
+                )
+
+
+class DiscordAnnouncer(Announcer):
+
+    def __init__(self, calling_for='Millennials', announcer_config=None):
+        super().__init__(calling_for=calling_for, announcer_config=announcer_config)
         self.messages = []
         load_dotenv()
         self.token = os.getenv("DISCORD_TOKEN")
         self.channel_id = int(os.getenv("DISCORD_CHANNEL"))
-        self.voice_channel_id = int(os.getenv("DISCORD_VOICE_CHANNEL"))
+        self.voice_channel_id = int(os.getenv("DISCORD_VOICE_CHANNEL", 0))
         self.client = discord.Client()
         self.ready = False
         self.prefix = "$say "
@@ -234,18 +466,14 @@ class DiscordAnnouncer(object):
         async def on_ready():
             print("Connected to Discord as {}.".format(self.client.user.name))
             self.channel = self.client.get_channel(self.channel_id)
-            self.voice_channel = self.client.get_channel(self.voice_channel_id)
-            print(dir(self.voice_channel))
-            print(dir(self.client))
-            await self.voice_channel.connect()
-            print(self.channel)
+            if self.voice_channel_id:
+                self.voice_channel = self.client.get_channel(self.voice_channel_id)
+                await self.voice_channel.connect()
             self.ready = True
-            #await self.channel.send("%start")
         
         self.client.loop.create_task(self.say_all())
     
     async def start(self):
-        print('starting')
         await self.client.start(self.token)
 
     async def say_all(self):
@@ -273,7 +501,7 @@ class DiscordAnnouncer(object):
 
                     if time.time() * 1000 - last_update_time > 2300:
                         # play catch up if we're lagging by focusing on play by play
-                        quips = [pbp.lower()]
+                        quips = [pbp]
                     else:
                         quips = Quip.say_quips(pbp, self.calling_game)
 
@@ -312,15 +540,20 @@ async def sse_loop(cb):
 
 
 def main(announcer_config):
-    announcer = DiscordAnnouncer(calling_for='Millennials', announcer_config=announcer_config)
     loop = asyncio.get_event_loop()
-    loop.create_task(announcer.start())
+    if announcer_config['announcer_type'] == "discord":
+        announcer = DiscordAnnouncer(calling_for='Millennials')
+        loop.create_task(announcer.start())
+    elif announcer_config['announcer_type'] == "tts":
+        announcer = TTSAnnouncer(announcer_config=announcer_config)
+    else:
+        raise Exception("Unsupported announcer type")
     loop.create_task(sse_loop(announcer.on_message()))
     loop.run_forever()
 
 
 def test():
-    announcer = Announcer(calling_for='Fridays')
+    announcer = TTSAnnouncer(calling_for='Fridays')
 
     test_dump = [
         'gameDataUpdate',
@@ -389,6 +622,8 @@ def test():
 
 with open('./quips.yaml', 'r') as __f:
     __y = yaml.load(__f)
+    sound_manager = SoundManager(__y['sounds'])
+    sound_cues = __y['sound_cues']
     Quip.load(__y['quips'])
     __announcer_config = __y['announcer']
 

@@ -1,9 +1,11 @@
 ---
 announcer:
-  default_voice:
-    - 'com.apple.speech.synthesis.voice.daniel.premium'
+  calling_for: Millennials
+  announcer_type: discord
+  enable_splorts_center: false
   friends:
     - 'com.apple.speech.synthesis.voice.daniel'
+    - 'com.apple.speech.synthesis.voice.daniel.premium'
     - 'com.apple.speech.synthesis.voice.Alex'
     - 'com.apple.speech.synthesis.voice.fiona'
     - 'com.apple.speech.synthesis.voice.karen'
@@ -19,10 +21,10 @@ announcer:
 sounds:
   cheer:
     file: ./media/cheering.wav
-    volume: -17
+    volume: -16
   crowd:
     file: ./media/crowd_applause.wav
-    volume: -20
+    volume: -18
   bat_hit:
     file: ./media/bat_hit.wav
     volume: -10
@@ -34,13 +36,16 @@ sounds:
     volume: -10
   roar:
     file: ./media/roar.wav
-    volume: -15
+    volume: -13
   incineration:
     file: ./media/short_incineration.wav
     volume: -15
   crowd_oh:
     file: ./media/crowd_ooh.wav
-    volume: -15
+    volume: -13
+  splorts_update:
+    file: ./media/stinger.wav
+    volume: 0
 
 sound_cues:
   -
@@ -124,6 +129,16 @@ sound_cues:
     sounds:
       - crowd_oh
     delay: 1.0
+  -
+    trigger: "play ball"
+    sounds:
+      - roar
+    delay: 0
+  -
+    trigger: welcome
+    sounds:
+      - crowd
+    delay: 0
 
 quips:
   -
@@ -415,3 +430,20 @@ quips:
     trigger_after:
       - 'fourth base'
     chance: 1.0
+  -
+    phrases:
+      - "Welcome this broadcast of {at} at {ht}. I'm your host, Jlohn Mladden, ready for another beautiful day of blaseball."
+    trigger_before:
+      - 'play ball!'
+    args:
+      at: 'game.away_team'
+      ht: 'game.home_team'
+    chance: 1.0
+  -
+    phrases:
+      - "Can you feel the heat?"
+      - "Felt the heat off that one!"
+    trigger_after:
+      - "struck out"
+    conditions: 'game.pitching == "Stevenson Heat"'
+    chance: 0.25
