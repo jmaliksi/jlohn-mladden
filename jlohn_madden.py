@@ -457,7 +457,7 @@ class DiscordAnnouncer(Announcer):
         load_dotenv()
         self.token = os.getenv("DISCORD_TOKEN")
         self.channel_id = int(os.getenv("DISCORD_CHANNEL"))
-        self.voice_channel_id = int(os.getenv("DISCORD_VOICE_CHANNEL"))
+        self.voice_channel_id = int(os.getenv("DISCORD_VOICE_CHANNEL", 0))
         self.client = discord.Client()
         self.ready = False
         self.prefix = "$say "
@@ -466,8 +466,9 @@ class DiscordAnnouncer(Announcer):
         async def on_ready():
             print("Connected to Discord as {}.".format(self.client.user.name))
             self.channel = self.client.get_channel(self.channel_id)
-            self.voice_channel = self.client.get_channel(self.voice_channel_id)
-            await self.voice_channel.connect()
+            if self.voice_channel_id:
+                self.voice_channel = self.client.get_channel(self.voice_channel_id)
+                await self.voice_channel.connect()
             self.ready = True
         
         self.client.loop.create_task(self.say_all())
@@ -500,7 +501,7 @@ class DiscordAnnouncer(Announcer):
 
                     if time.time() * 1000 - last_update_time > 2300:
                         # play catch up if we're lagging by focusing on play by play
-                        quips = [pbp.lower()]
+                        quips = [pbp]
                     else:
                         quips = Quip.say_quips(pbp, self.calling_game)
 
