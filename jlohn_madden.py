@@ -18,6 +18,11 @@ import pprint
 from aiohttp_sse_client import client as sse_client
 from aiohttp.client_exceptions import ClientPayloadError
 
+import os
+
+import discord
+from dotenv import load_dotenv
+
 
 BLASE_MAP = {
     0: 'first',
@@ -316,22 +321,26 @@ class Quip(object):
             args[key] = eval(equation, {}, {'game': game, 'utils': utils})
         return random.choice(self.phrases).format(**args)
 
-
 class Announcer(object):
-
     def __init__(self, calling_for='Fridays', announcer_config=None):
         self.main_game = calling_for
         self.calling_for = calling_for
         self.calling_game = BlaseballGlame()
-        self.voice = pyttsx3.init(debug=True)
-        self.voice.connect('started-utterance', self.sound_effect)
-
         self.last_pbps = []
-
-        voice_ids = set([self.voice.getProperty('voice')])
         if announcer_config:
             self.main_game = announcer_config['calling_for']
             self.calling_for = announcer_config['calling_for']
+
+
+class TTSAnnouncer(Announcer):
+    def __init__(self, calling_for='Fridays', announcer_config=None):
+        super().__init__(calling_for=calling_for, announcer_config=announcer_config)
+        self.calling_game = BlaseballGlame()
+        self.voice = pyttsx3.init(debug=True)
+        self.voice.connect('started-utterance', self.sound_effect)
+
+        voice_ids = set([self.voice.getProperty('voice')])
+        if announcer_config:
             system_voices = [v.id for v in self.voice.getProperty('voices')]
             for voice in announcer_config.get('friends', []):
                 if voice in system_voices:
@@ -438,6 +447,74 @@ class Announcer(object):
                 )
 
 
+class DiscordAnnouncer(Announcer):
+
+    def __init__(self, calling_for='Millennials', announcer_config=None):
+        super().__init__(calling_for=calling_for, announcer_config=announcer_config)
+        self.messages = []
+        load_dotenv()
+        self.token = os.getenv("DISCORD_TOKEN")
+        self.channel_id = int(os.getenv("DISCORD_CHANNEL"))
+        self.voice_channel_id = int(os.getenv("DISCORD_VOICE_CHANNEL", 0))
+        self.client = discord.Client()
+        self.ready = False
+        if announcer_config:
+            self.prefix = announcer_config.get('discord_prefix', "")
+
+        @self.client.event
+        async def on_ready():
+            print("Connected to Discord as {}.".format(self.client.user.name))
+            self.channel = self.client.get_channel(self.channel_id)
+            if self.voice_channel_id:
+                self.voice_channel = self.client.get_channel(self.voice_channel_id)
+                await self.voice_channel.connect()
+            self.ready = True
+        
+        self.client.loop.create_task(self.say_all())
+    
+    async def start(self):
+        await self.client.start(self.token)
+
+    async def say_all(self):
+        while True:
+            if self.messages:
+                for message in self.messages:
+                    await self.say("{}{}".format(self.prefix, message))
+                self.messages.clear()
+            await asyncio.sleep(1)
+
+    async def say(self, message):
+        if self.ready:
+            print("Announcing: {}".format(message))
+            await self.channel.send(message)
+
+    def on_message(self):
+        def callback(message, last_update_time):
+            if not message:
+                return []
+            for game in message:
+                if self.calling_for in (game['awayTeamNickname'], game['homeTeamNickname']):
+                    pbp = self.calling_game.update(game)
+                    if not pbp:
+                        break
+
+                    if time.time() * 1000 - last_update_time > 2300:
+                        # play catch up if we're lagging by focusing on play by play
+                        quips = [pbp]
+                    else:
+                        quips = Quip.say_quips(pbp, self.calling_game)
+
+                    for quip in quips:
+                        if quip in self.last_pbps:
+                            continue
+                        self.last_pbps.append(quip)
+                        # print(quip)
+                        self.messages.append(quip)
+                    break
+            self.last_pbps = self.last_pbps[-4:]  # avoid last 4 redundancy
+        return callback
+
+
 async def sse_loop(cb):
     retry_delay = 0.1
     while True:
@@ -462,13 +539,20 @@ async def sse_loop(cb):
 
 
 def main(announcer_config):
-    announcer = Announcer(announcer_config=announcer_config)
     loop = asyncio.get_event_loop()
-    loop.run_until_complete(sse_loop(announcer.on_message()))
+    if announcer_config['announcer_type'] == "discord":
+        announcer = DiscordAnnouncer(calling_for='Millennials')
+        loop.create_task(announcer.start())
+    elif announcer_config['announcer_type'] == "tts":
+        announcer = TTSAnnouncer(announcer_config=announcer_config)
+    else:
+        raise Exception("Unsupported announcer type")
+    loop.create_task(sse_loop(announcer.on_message()))
+    loop.run_forever()
 
 
 def test():
-    announcer = Announcer(calling_for='Fridays')
+    announcer = TTSAnnouncer(calling_for='Fridays')
 
     test_dump = [
         'gameDataUpdate',
