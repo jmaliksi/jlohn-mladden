@@ -2,7 +2,7 @@
 announcer:
   calling_for: Millennials
   announcer_type: discord
-  enable_splorts_center: true
+  enable_splorts_center: false
   friends:
     - 'com.apple.speech.synthesis.voice.daniel'
     - 'com.apple.speech.synthesis.voice.daniel.premium'
