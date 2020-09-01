@@ -1,7 +1,7 @@
 ---
 announcer:
-  calling_for: Millennials
-  announcer_type: discord
+  calling_for: Fridays
+  announcer_type: tts
   discord_prefix: '$say '
   enable_splorts_center: false
   friends:
