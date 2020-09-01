@@ -39,11 +39,15 @@ class SplortsCenter(object):
 
     def load_ticker(self):
         res = requests.get('https://www.blaseball.com/database/globalEvents')
+        if res.status_code != 200:
+            return
         for msg in res.json():
             self.updates.append(msg['msg'].lower())
 
     def load_results(self):
         res = requests.get(f'https://www.blaseball.com/database/games?season={self.season - 1}&day={self.day - 1}')
+        if res.status_code != 200:
+            return
         for game in res.json():
             home_team = game['homeTeamName']
             away_team = game['awayTeamName']

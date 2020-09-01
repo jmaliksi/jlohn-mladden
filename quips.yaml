@@ -46,7 +46,7 @@ sounds:
     volume: -13
   splorts_update:
     file: ./media/stinger.wav
-    volume: 0
+    volume: -8
 
 sound_cues:
   -
