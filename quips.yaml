@@ -3,7 +3,7 @@ announcer:
   calling_for: Fridays
   announcer_type: tts
   discord_prefix: '$say '
-  enable_splorts_center: false
+  enable_splorts_center: true
   friends:
     - 'com.apple.speech.synthesis.voice.daniel'
     - 'com.apple.speech.synthesis.voice.daniel.premium'
@@ -46,7 +46,7 @@ sounds:
     volume: -13
   splorts_update:
     file: ./media/stinger.wav
-    volume: -8
+    volume: -10
 
 sound_cues:
   -
@@ -433,7 +433,7 @@ quips:
     chance: 1.0
   -
     phrases:
-      - "Welcome this broadcast of {at} at {ht}. I'm your host, Jlohn Mladden, ready for another beautiful day of blaseball."
+      - "Welcome to this broadcast of {at} at {ht}. I'm your host, Jlohn Mladden, ready for another beautiful day of blaseball."
     trigger_before:
       - 'play ball!'
     args:
@@ -448,3 +448,12 @@ quips:
       - "struck out"
     conditions: 'game.pitching == "Stevenson Heat"'
     chance: 0.25
+  -
+    phrases:
+      - "poggers"
+    trigger_after:
+      - 'york silk hits a solo home run'
+      - 'york silk hits a double home run'
+      - 'york silk hits a triple home run'
+      - 'york silk hits a grand slam'
+    chance: 1.0

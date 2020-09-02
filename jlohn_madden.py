@@ -42,7 +42,7 @@ class SplortsCenter(object):
         if res.status_code != 200:
             return
         for msg in res.json():
-            self.updates.append(msg['msg'].lower())
+            self.updates.append('Welcome to Splorts Center. ' + msg['msg'].lower())
 
     def load_results(self):
         res = requests.get(f'https://www.blaseball.com/database/games?season={self.season - 1}&day={self.day - 1}')
@@ -60,12 +60,13 @@ class SplortsCenter(object):
             losing_score = home_score if home_score < away_score else away_score
 
             self.updates.append(
+                'Welcome to Splorts Center. '
                 f'{away_team} at {home_team}, game {game["seriesIndex"]} of {game["seriesLength"]}. ' +
                 f'The {winning_team} defeat the {losing_team} {winning_score} to {losing_score}'
             )
 
             for outcome in game.get('outcomes', []):
-                self.updates.append(outcome)
+                self.updates.append('Welcome to Splorts Center. ' + outcome)
 
     def next_update(self):
         if not self.updates:
