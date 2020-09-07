@@ -21,7 +21,7 @@ If ujson fails, install VS C++ Build Tools
 
 ## Usage
 ```
-python jlohn_madden.py
+python -m jlohn_mladden
 ```
 This process will run indefinitely and can be exited cleanly with a ctrl+c.
 

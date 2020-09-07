@@ -7,7 +7,7 @@ import yaml
 from jlohn_mladden.quip import Quip
 from jlohn_mladden.sounds import SoundManager
 from jlohn_mladden.game import GamesWatcher
-from jlohn_mladden.announcer import TTSAnnouncer
+from jlohn_mladden.announcer import DiscordAnnouncer, TTSAnnouncer
 
 
 def main():
@@ -21,7 +21,8 @@ def main():
 
         loop = asyncio.get_event_loop()
         if announcer_config['announcer_type'] == 'discord':
-            pass  # TODO
+            announcer = DiscordAnnouncer(announcer_config, None)
+            loop.create_task(announcer.start())
         elif announcer_config['announcer_type'] == 'tts':
             announcer = TTSAnnouncer(announcer_config, sound_manager)
         else:

@@ -2,6 +2,8 @@ import abc
 import random
 import time
 
+import discord
+from dotenv import load_dotenv
 import pyttsx3
 
 from jlohn_mladden.quip import Quip
@@ -57,7 +59,6 @@ class Announcer(abc.ABC):
         """
         pass
 
-    @abc.abstractmethod
     def speak(self):
         """
         Override to tell your output to flush enqueued messages as appropriate
@@ -89,3 +90,44 @@ class TTSAnnouncer(Announcer):
 
     def speak(self):
         self.voice.runAndWait()
+
+
+class DiscordAnnouncer(Announcer):
+
+    def __init__(self, config, sound_manager=None):
+        super().__init__(config, sound_manager)
+        self.messages = []
+        load_dotenv()
+        self.token = os.getenv('DISCORD_TOKEN')
+        self.channel_id = int(os.getenv('DISCORD_CHANNEL'))
+        self.voice_channel_id = int(os.getenv('DISCORD_VOICE_CHANNEL', 0))
+        self.client = discord.Client()
+        self.ready = False
+        self.prefix = config.get('discord_prefix', '')
+
+        @self.client.event
+        async def on_ready():
+            print('Connected to Discord as {}.'.format(self.client.user.name))
+            self.channel = self.client.get_channel(self.channel_id)
+            if self.voice_channel_id:
+                self.voice_channel = self.client.get_channel(self.voice_channel_id)
+                await self.voice_channel.connect()
+            self.ready = True
+
+        self.client.loop.create_task(self.say_all())
+
+    async def say_all(self):
+        while True:
+            if self.messages:
+                for message in self.messages:
+                    await self.say('{}{}'.format(self.prefix, message))
+                self.messages.clear()
+            await asyncio.sleep(1)
+
+    async def say(self, message):
+        if self.ready:
+            print('Announcing: {}'.format(message))
+            await self.channel.send(message)
+
+    def enqueue_message(self, message):
+        self.messages.append(message)
