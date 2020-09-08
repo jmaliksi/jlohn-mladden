@@ -5,11 +5,8 @@ announcer:
   discord_prefix: '$say '
   enable_splorts_center: true
   friends:
-    - 'com.apple.speech.synthesis.voice.daniel'
     - 'com.apple.speech.synthesis.voice.daniel.premium'
     - 'com.apple.speech.synthesis.voice.Alex'
-    - 'com.apple.speech.synthesis.voice.fiona'
-    - 'com.apple.speech.synthesis.voice.karen'
     - 'com.apple.speech.synthesis.voice.fiona.premium'
     - 'com.apple.speech.synthesis.voice.karen.premium'
     - 'com.apple.speech.synthesis.voice.moira'
@@ -18,6 +15,31 @@ announcer:
     - 'com.apple.speech.synthesis.voice.tessa'
     - 'com.apple.speech.synthesis.voice.veena'
     - 'com.apple.speech.synthesis.voice.Victoria'
+  localization:
+    global:
+      -
+        pattern: '([Tt]op|[Bb]ottom) of (\d*),'
+        replace: 'top of the \2th.'
+    com.apple.speech.synthesis.voice.fiona.premium:
+      -
+        pattern: '(\d*)-(\d*)'
+        replace: '\\1 \\2'
+    com.apple.speech.synthesis.voice.Alex:
+      -
+        pattern: '[Bb]laseball'
+        replace: 'blais ball'
+    com.apple.speech.synthesis.voice.Victoria:
+      -
+        pattern: '[Bb]laseball'
+        replace: 'blais ball'
+    com.apple.speech.synthesis.voice.rishi:
+      -
+        pattern: '[Pp]ies'
+        replace: 'pyes'
+    com.apple.speech.synthesis.voice.veena:
+      -
+        pattern: '[Pp]ies'
+        replace: 'pyes'
 
 sound_root_folder: media
 sounds:
@@ -386,6 +408,9 @@ quips:
       - 'And here comes the shame.'
       - 'What a shame.'
       - "They won't let us go home yet!"
+      - 'What a stunning display of splortsmanship.'
+      - 'A shame, that is.'
+      - 'When will this game end?'
     trigger_after:
       - 'score'
       - 'batting'
@@ -454,7 +479,14 @@ quips:
       - "poggers"
     trigger_after:
       - 'york silk hits a solo home run'
-      - 'york silk hits a double home run'
-      - 'york silk hits a triple home run'
+      - 'york silk hits a 2-run home run'
+      - 'york silk hits a 3-run home run'
       - 'york silk hits a grand slam'
+    chance: 1.0
+  -
+    phrases:
+      - "I'll have what she's having!"
+      - "Pour me a glass."
+    trigger_after:
+      - 'juice collins hits a double'
     chance: 1.0

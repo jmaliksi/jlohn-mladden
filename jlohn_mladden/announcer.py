@@ -1,5 +1,7 @@
 import abc
+from collections import defaultdict
 import random
+import re
 import uuid
 import time
 
@@ -102,6 +104,11 @@ class TTSAnnouncer(Announcer):
         self.splorts_center = None
         self.enable_splorts_center = config.get('enable_splorts_center', False)
 
+        self.voice_localizations = defaultdict(list)
+        for name, locs in config.get('localization').items():
+            for loc in locs:
+                self.voice_localizations[name].append((re.compile(loc['pattern']), loc['replace']))
+
     def sound_effect(self, name):
         if self._sound_manager:
             self._sound_manager.cue_sound(name)
@@ -184,6 +191,13 @@ class TTSAnnouncer(Announcer):
         self._sound_manager.play_sound('splorts_update')
         self.voice.say(update)
         self.voice.runAndWait()
+
+    def preprocess_quip(self, quip):
+        cur_voice = self.voice.getProperty('voice')
+        localizations = self.voice_localizations.get('global') + self.voice_localizations.get(cur_voice, [])
+        for pattern, sub in localizations:
+            quip = re.sub(pattern, sub, quip)
+        return quip
 
 
 class DiscordAnnouncer(Announcer):
