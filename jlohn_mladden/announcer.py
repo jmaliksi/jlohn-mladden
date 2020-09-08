@@ -177,7 +177,7 @@ class TTSAnnouncer(Announcer):
             game_id = self.choose_game(schedule)
             if not game_id:
                 self.engage_splorts_center(game)
-                return True
+            return True
         return False
 
     def engage_splorts_center(self, game):
