@@ -1,4 +1,5 @@
 from concurrent.futures import ThreadPoolExecutor, TimeoutError
+import os.path
 import random
 import sys
 
@@ -10,9 +11,11 @@ class SoundManager(object):
 
     def __init__(self, config):
         self.sound_effects = {}
+        sound_root_folder = config['sound_root_folder']
         for name, c in config['sounds'].items():
+            path = os.path.join(sound_root_folder, c['file'])
             try:
-                self.sound_effects[name] = pydub.AudioSegment.from_wav(c['file']) + c['volume']
+                self.sound_effects[name] = pydub.AudioSegment.from_wav(path) + c['volume']
             except Exception:
                 pass
 

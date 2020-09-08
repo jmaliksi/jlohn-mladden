@@ -19,33 +19,34 @@ announcer:
     - 'com.apple.speech.synthesis.voice.veena'
     - 'com.apple.speech.synthesis.voice.Victoria'
 
+sound_root_folder: media
 sounds:
   cheer:
-    file: ./media/cheering.wav
+    file: cheering.wav
     volume: -16
   crowd:
-    file: ./media/crowd_applause.wav
+    file: crowd_applause.wav
     volume: -18
   bat_hit:
-    file: ./media/bat_hit.wav
+    file: bat_hit.wav
     volume: -10
   bat_hit2:
-    file: ./media/bat_hit2.wav
+    file: bat_hit2.wav
     volume: -10
   bat_hit3:
-    file: ./media/bat_hit3.wav
+    file: bat_hit3.wav
     volume: -10
   roar:
-    file: ./media/roar.wav
+    file: roar.wav
     volume: -13
   incineration:
-    file: ./media/short_incineration.wav
+    file: short_incineration.wav
     volume: -15
   crowd_oh:
-    file: ./media/crowd_ooh.wav
+    file: crowd_ooh.wav
     volume: -13
   splorts_update:
-    file: ./media/stinger.wav
+    file: stinger.wav
     volume: -10
 
 sound_cues:
