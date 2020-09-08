@@ -32,7 +32,9 @@ class Announcer(abc.ABC):
             pbp = game and game.last_update
             if not pbp:
                 return []
-            self.on_play_by_play(pbp, game)
+            skip_quips = self.on_play_by_play(pbp, game, schedule)
+            if skip_quips:
+                return []
             quips = Quip.say_quips(pbp, game)
             for quip in quips:
                 quip = self.preprocess_quip(quip)
@@ -47,17 +49,19 @@ class Announcer(abc.ABC):
 
         return callback
 
-    def on_schedule(self, schedule, game):
+    def on_schedule(self, schedule):
         """
         Override with custom logic to process a new schedule update.
         """
         pass
 
-    def on_play_by_play(self, message):
+    def on_play_by_play(self, message, game, schedule):
         """
         Override with custom logic to process play by play for calling_game, ie voice switching
+        Return True to skip processing the rest of this quip cycle (ie if you're overriding
+        everything)
         """
-        pass
+        return False
 
     @abc.abstractmethod
     def enqueue_message(self, message):
@@ -156,17 +160,18 @@ class TTSAnnouncer(Announcer):
         self.last_pbps = []
         return next_game.id_
 
-    def on_schedule(self, schedule):
-        self.choose_game(schedule)
-
-    def on_play_by_play(self, message, game):
+    def on_play_by_play(self, message, game, schedule):
         if self.current_game_id != game.id_:
             # new game, switch voice
             self.current_game_id = game.id_
             self.choose_voice()
 
         if 'Game over' in message and 'game over.' in self.last_pbps:
-            self.engage_splorts_center(game)
+            game_id = self.choose_game(schedule)
+            if not game_id:
+                self.engage_splorts_center(game)
+                return True
+        return False
 
     def engage_splorts_center(self, game):
         if not self.enable_splorts_center:
