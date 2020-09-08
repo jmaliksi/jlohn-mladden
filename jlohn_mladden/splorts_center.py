@@ -16,7 +16,7 @@ class SplortsCenter(object):
     def load_results(self):
         if self.day == 1:
             return
-        games = Game.load_by_day(self.season, self.day - 1)
+        games = Game.load_by_day(self.season, self.day)
         for game in games.values():
             self.updates.append(
                 'Welcome to Splorts Center. ' +
