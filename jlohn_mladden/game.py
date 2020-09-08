@@ -18,6 +18,8 @@ class GameSnapshot(object):
         self.season = game.season
         self.away_team = game.away_team_name
         self.home_team = game.home_team_name
+        self.away_team_nickname = game.away_team_nickname
+        self.home_team_nickname = game.home_team_nickname
         self.away_score = game.away_score
         self.home_score = game.home_score
 
@@ -40,6 +42,7 @@ class GameSnapshot(object):
             for name, base in zip(game.base_runner_names, game.bases_occupied):
                 self.on_blase[base] = name or 'runner'
 
+        self.game_complete = game.game_complete
         self.shame = game.shame
         self.last_update = game.last_update
         self.snapshot_at = time.time()
