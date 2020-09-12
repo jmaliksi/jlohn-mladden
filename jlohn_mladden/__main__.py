@@ -1,4 +1,5 @@
 import asyncio
+import click
 
 from blaseball_mike.events import stream_events
 from blaseball_mike.stream_model import StreamData
@@ -10,7 +11,10 @@ from jlohn_mladden.game import GamesWatcher
 from jlohn_mladden.announcer import DiscordAnnouncer, TTSAnnouncer
 
 
-def main():
+@click.command()
+@click.option('--calling_for', default=None)
+@click.option('--test', is_flag=True)
+def main(calling_for, test):
     with open('config/quips.yaml', 'r') as f:
         y = yaml.load(f)
         sound_manager = SoundManager(y)
@@ -18,6 +22,8 @@ def main():
         quips = Quip.load(y['quips'])
 
         announcer_config = y['announcer']
+        if calling_for:
+            announcer_config['calling_for'] = calling_for
 
         loop = asyncio.get_event_loop()
         if announcer_config['announcer_type'] == 'discord':
@@ -31,7 +37,10 @@ def main():
         game_watcher = GamesWatcher()
         game_watcher.subscribe(announcer.on_update())
 
-        loop.create_task(game_watcher.stream())
+        stream_url = 'https://www.blaseball.com/events/streamData'
+        if test:
+            stream_url = 'http://localhost:8080/streamData'
+        loop.create_task(game_watcher.stream(url=stream_url))
         loop.run_forever()
 
 

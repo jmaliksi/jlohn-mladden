@@ -22,6 +22,7 @@ class GameSnapshot(object):
         self.home_team_nickname = game.home_team_nickname
         self.away_score = game.away_score
         self.home_score = game.home_score
+        self.point_differential = abs(self.home_score - self.away_score)
 
         self.inning = game.inning
         self.batting_change = kwargs.get('batting_change', False)
@@ -41,6 +42,12 @@ class GameSnapshot(object):
         if game.baserunner_count > 0:
             for name, base in zip(game.base_runner_names, game.bases_occupied):
                 self.on_blase[base] = name or 'runner'
+
+        standings = kwargs.get('standings', {})
+        self.series_length = game.series_length
+        self.series_index = game.series_index
+        self.home_wins = standings.wins.get(game._home_team_id, 0)
+        self.away_wins = standings.wins.get(game._away_team_id, 0)
 
         self.game_complete = game.game_complete
         self.shame = game.shame
@@ -66,7 +73,8 @@ class GamesWatcher(object):
         self._games = {}
         self._subscribers = []
 
-    def update(self, schedule):
+    def update(self, games):
+        schedule = games and games.schedule
         if not schedule:
             return
         # snapshot games each cycle to avoid stale values on interpolation
@@ -79,7 +87,11 @@ class GamesWatcher(object):
                 batting_change = game.top_of_inning != last_update.top_of_inning
             index[game.home_team_nickname.lower()] = id_
             index[game.away_team_nickname.lower()] = id_
-            game_updates[id_] = GameSnapshot(game, batting_change=batting_change)
+            game_updates[id_] = GameSnapshot(
+                game,
+                batting_change=batting_change,
+                standings=games.standings,
+            )
 
         for subscriber in self._subscribers:
             subscriber(game_updates, index)
@@ -94,9 +106,9 @@ class GamesWatcher(object):
         """
         self._subscribers.append(on_update)
 
-    async def stream(self):
-        async for event in stream_events():
+    async def stream(self, url='https://www.blaseball.com/events/streamData'):
+        async for event in stream_events(url=url):
             if not event:
                 continue
             stream_data = StreamData(event)
-            self.update(stream_data.games.schedule)
+            self.update(stream_data.games)
