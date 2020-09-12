@@ -105,7 +105,7 @@ sound_cues:
     trigger: double
     sounds:
       - cheer
-    delay: 0.5
+    delay: 1.1
   -
     trigger: triple
     sounds:
@@ -418,7 +418,7 @@ quips:
       - 'What a shame.'
       - "They won't let us go home yet!"
       - 'What a stunning display of splortsmanship.'
-      - 'A shame, that is.'
+      - 'A shame that is.'
       - 'When will this game end?'
     trigger_after:
       - 'score'
@@ -475,6 +475,14 @@ quips:
       at: 'game.away_team'
       ht: 'game.home_team'
     chance: 1.0
+    conditions: 'set([game.away_team_nickname, game.home_team_nickname]) != set(["Fridays", "Magic"])'
+  -
+    phrases:
+      - "Welcome to Friday Night Magic! I'm your host, Jlohn Mladden, ready for another magical cookout I mean game of blaseball!"
+    trigger_before:
+      - 'play ball!'
+    chance: 1.0
+    conditions: 'set([game.away_team_nickname, game.home_team_nickname]) == set(["Fridays", "Magic"])'
   -
     phrases:
       - "Can you feel the heat?"
