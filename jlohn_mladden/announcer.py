@@ -15,7 +15,10 @@ from jlohn_mladden.quip import Quip
 
 
 class _dummy:
+    id_ = ''
     last_update = 'Game over'
+    season = 0
+    day = 0
 
 
 class Announcer(abc.ABC):
@@ -51,7 +54,7 @@ class Announcer(abc.ABC):
             quips = Quip.say_quips(pbp, game)
             for quip in quips:
                 quip = self.preprocess_quip(quip)
-                if quip in self.last_pbps:
+                if quip.lower() in self.last_pbps:
                     continue
                 self.last_pbps.append(quip.lower())
                 print(quip)
@@ -127,8 +130,8 @@ class TTSAnnouncer(Announcer):
                 self.voice_localizations[name].append((re.compile(loc['pattern']), loc['replace']))
 
     def sound_effect(self, name):
-        if self._sound_manager:
-            self._sound_manager.cue_sound(name)
+        if name and self._sound_manager:
+            self._sound_manager.cue_sound(name.lower())
 
     def enqueue_message(self, message):
         self.voice.say(message, message)
@@ -191,7 +194,7 @@ class TTSAnnouncer(Announcer):
             self.current_game_id = game.id_
             self.choose_voice()
 
-        if 'Game over' in message and 'game over' in self.last_pbps:
+        if 'Game over' in message and 'game over.' in self.last_pbps:
             game_id = self.change_channel(schedule)
             if not game_id:
                 self.engage_splorts_center(game)
@@ -236,17 +239,19 @@ class TTSAnnouncer(Announcer):
             for game in games:
                 if game.game_complete:
                     continue
-                if game.inning > 8:
+                if game.inning > 9:
                     # extra innings, h*ck ya
-                    self.voice.say(f"We have extra innings with {game.away_team_nickname} at {game.home_team_nickname}. Switching broadcast.")
+                    if game.home_team_nickname.lower() != self.calling_for:
+                        self.voice.say(f"We have extra innings with {game.away_team_nickname} at {game.home_team_nickname}. Switching broadcast.")
                     self.calling_for = game.home_team_nickname.lower()
                     self.current_game_id = game.id_
                     self.choose_voice()
                     return game
-                if game.inning == 8 and game.point_differential == 0 and game.home_score > 0:
+                if game.inning == 9 and game.point_differential == 0 and game.home_score > 0:
                     # tied in the ninth
-                    self.voice.say(f"We've a tie game in the ninth, over to {game.away_team_nickname} at {game.home_team_nickname}.")
-                    self.calling_for = game.home_team.nickname.lower()
+                    if game.home_team_nickname.lower() != self.calling_for:
+                        self.voice.say(f"We've a tie game in the ninth, over to {game.away_team_nickname} at {game.home_team_nickname}.")
+                    self.calling_for = game.home_team_nickname.lower()
                     self.current_game_id = game.id_
                     self.choose_voice()
                     return game
@@ -254,13 +259,14 @@ class TTSAnnouncer(Announcer):
             if game.point_differential <= 4:
                 return cur_game
             # there's a blow out, fall through to general game selection
-            self.voice.say(f"Things seem to be getting out of hand.")
 
         # playoff algo by sakimori
-        # TODO sort games by series end
         games = [g for g in schedule.values() if not g.game_complete]
+        games = sorted(games, key=lambda g: min(3 - g.home_series_wins, 3 - g.away_series_wins))
         if not games:
-            return _dummy()
+            if cur_game:
+                return cur_game
+            return list(schedule.values())[0]
 
         # if any games are not in the 9th inning, remove the ones that are
         # repeat for 8th
@@ -275,20 +281,32 @@ class TTSAnnouncer(Announcer):
                 return -1
             if a.point_differential > b.point_differential:
                 return 1
+            a_series = a.away_wins if a.home_series_wins < a.away_series_wins else a.home_wins
+            b_series = b.away_wins if b.home_series_wins < b.away_series_wins else b.home_wins
+            if a_series < b_series:
+                return -1
+            if a_series > b_series:
+                return 1
+            '''
             a_wins = a.home_wins if a.home_score < a.away_score else b.away_wins
             b_wins = b.home_wins if b.home_score < b.away_score else b.away_wins
             if a_wins < b_wins:
                 return -1
             if a_wins > b_wins:
                 return 1
+            '''
             return 0
 
         games = sorted(games, key=cmp_to_key(compare))
         new_game = games[0]
+        if self.current_game_id == new_game.id_:
+            return new_game
+
         self.calling_for = new_game.home_team_nickname.lower()
         self.current_game_id = new_game.id_
         # if there was a blowout, mention the switch
         if cur_game and cur_game.point_differential > 4:
+            self.voice.say(f"Things seem to be getting out of hand.")
             self.voice.say(f'Over to {new_game.away_team_nickname} at {new_game.home_team_nickname}.')
         self.choose_voice()
         return new_game

@@ -29,6 +29,9 @@ announcer:
       -
         pattern: '([Tt]op|[Bb]ottom) of (\d*),'
         replace: '\1 of the \2th.'
+      -
+        pattern: '-infinity'
+        replace: 'negative infinity'
     com.apple.speech.synthesis.voice.fiona.premium:
       -
         pattern: '(\d*)-(\d*)'

@@ -49,6 +49,16 @@ class GameSnapshot(object):
         self.home_wins = standings.wins.get(game._home_team_id, 0)
         self.away_wins = standings.wins.get(game._away_team_id, 0)
 
+        self.home_series_wins = 0
+        self.away_series_wins = 0
+        if kwargs.get('postseason'):
+            matchups = kwargs['postseason'].get('matchups', [])
+            for matchup in matchups:
+                if matchup['awayTeam'] == game._away_team_id:
+                    self.away_series_wins = matchup['awayWins']
+                if matchup['homeTeam'] == game._home_team_id:
+                    self.home_series_wins = matchup['homeWins']
+
         self.game_complete = game.game_complete
         self.shame = game.shame
         self.last_update = game.last_update
@@ -73,10 +83,11 @@ class GamesWatcher(object):
         self._games = {}
         self._subscribers = []
 
-    def update(self, games):
+    def update(self, games, raw=None):
         schedule = games and games.schedule
         if not schedule:
             return
+        raw = raw or {}
         # snapshot games each cycle to avoid stale values on interpolation
         game_updates = {}
         index = {}
@@ -91,6 +102,7 @@ class GamesWatcher(object):
                 game,
                 batting_change=batting_change,
                 standings=games.standings,
+                postseason=raw.get('games', {}).get('postseason', {}),
             )
 
         for subscriber in self._subscribers:
@@ -111,4 +123,4 @@ class GamesWatcher(object):
             if not event:
                 continue
             stream_data = StreamData(event)
-            self.update(stream_data.games)
+            self.update(stream_data.games, raw=event)
