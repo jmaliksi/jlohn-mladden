@@ -5,11 +5,8 @@ announcer:
   discord_prefix: '$say '
   enable_splorts_center: true
   friends:
-    - 'com.apple.speech.synthesis.voice.daniel'
     - 'com.apple.speech.synthesis.voice.daniel.premium'
     - 'com.apple.speech.synthesis.voice.Alex'
-    - 'com.apple.speech.synthesis.voice.fiona'
-    - 'com.apple.speech.synthesis.voice.karen'
     - 'com.apple.speech.synthesis.voice.fiona.premium'
     - 'com.apple.speech.synthesis.voice.karen.premium'
     - 'com.apple.speech.synthesis.voice.moira'
@@ -18,35 +15,73 @@ announcer:
     - 'com.apple.speech.synthesis.voice.tessa'
     - 'com.apple.speech.synthesis.voice.veena'
     - 'com.apple.speech.synthesis.voice.Victoria'
+  localization:
+    global:
+      -
+        pattern: '([Tt]op|[Bb]ottom) of 1,'
+        replace: '\1 of the first.'
+      -
+        pattern: '([Tt]op|[Bb]ottom) of 2,'
+        replace: '\1 of the second.'
+      -
+        pattern: '([Tt]op|[Bb]ottom) of 3,'
+        replace: '\1 of the third.'
+      -
+        pattern: '([Tt]op|[Bb]ottom) of (\d*),'
+        replace: '\1 of the \2th.'
+      -
+        pattern: '-infinity'
+        replace: 'negative infinity'
+    com.apple.speech.synthesis.voice.fiona.premium:
+      -
+        pattern: '(\d*)-(\d*)'
+        replace: '\1 \2'
+    com.apple.speech.synthesis.voice.Alex:
+      -
+        pattern: '[Bb]laseball'
+        replace: 'blais ball'
+    com.apple.speech.synthesis.voice.Victoria:
+      -
+        pattern: '[Bb]laseball'
+        replace: 'blais ball'
+    com.apple.speech.synthesis.voice.rishi:
+      -
+        pattern: '[Pp]ies'
+        replace: 'pyes'
+    com.apple.speech.synthesis.voice.veena:
+      -
+        pattern: '[Pp]ies'
+        replace: 'pyes'
 
+sound_root_folder: media
 sounds:
   cheer:
-    file: ./media/cheering.wav
+    file: cheering.wav
     volume: -16
   crowd:
-    file: ./media/crowd_applause.wav
+    file: crowd_applause.wav
     volume: -18
   bat_hit:
-    file: ./media/bat_hit.wav
+    file: bat_hit.wav
     volume: -10
   bat_hit2:
-    file: ./media/bat_hit2.wav
+    file: bat_hit2.wav
     volume: -10
   bat_hit3:
-    file: ./media/bat_hit3.wav
+    file: bat_hit3.wav
     volume: -10
   roar:
-    file: ./media/roar.wav
+    file: roar.wav
     volume: -13
   incineration:
-    file: ./media/short_incineration.wav
+    file: short_incineration.wav
     volume: -15
   crowd_oh:
-    file: ./media/crowd_ooh.wav
-    volume: -13
+    file: crowd_ooh.wav
+    volume: -14
   splorts_update:
-    file: ./media/stinger.wav
-    volume: -10
+    file: stinger.wav
+    volume: -12
 
 sound_cues:
   -
@@ -73,7 +108,7 @@ sound_cues:
     trigger: double
     sounds:
       - cheer
-    delay: 0.5
+    delay: 1.1
   -
     trigger: triple
     sounds:
@@ -385,6 +420,9 @@ quips:
       - 'And here comes the shame.'
       - 'What a shame.'
       - "They won't let us go home yet!"
+      - 'What a stunning display of splortsmanship.'
+      - 'A shame that is.'
+      - 'When will this game end?'
     trigger_after:
       - 'score'
       - 'batting'
@@ -440,6 +478,14 @@ quips:
       at: 'game.away_team'
       ht: 'game.home_team'
     chance: 1.0
+    conditions: 'set([game.away_team_nickname, game.home_team_nickname]) != set(["Fridays", "Magic"])'
+  -
+    phrases:
+      - "Welcome to Friday Night Magic! I'm your host, Jlohn Mladden, ready for another magical cookout I mean game of blaseball!"
+    trigger_before:
+      - 'play ball!'
+    chance: 1.0
+    conditions: 'set([game.away_team_nickname, game.home_team_nickname]) == set(["Fridays", "Magic"])'
   -
     phrases:
       - "Can you feel the heat?"
@@ -453,7 +499,14 @@ quips:
       - "poggers"
     trigger_after:
       - 'york silk hits a solo home run'
-      - 'york silk hits a double home run'
-      - 'york silk hits a triple home run'
+      - 'york silk hits a 2-run home run'
+      - 'york silk hits a 3-run home run'
       - 'york silk hits a grand slam'
+    chance: 1.0
+  -
+    phrases:
+      - "I'll have what she's having!"
+      - "Pour me a glass."
+    trigger_after:
+      - 'juice collins hits a double'
     chance: 1.0

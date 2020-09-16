@@ -21,7 +21,7 @@ If ujson fails, install VS C++ Build Tools
 
 ## Usage
 ```
-python jlohn_madden.py
+python -m jlohn_mladden
 ```
 This process will run indefinitely and can be exited cleanly with a ctrl+c.
 
@@ -31,11 +31,37 @@ Aside from reading the play by play, jlohn can also be configured to play sound 
 ## Sound Effects
 Defines sounds on disk that can be played. Configured under the `sounds` key.
 ```
+sound_root_folder: root_folder
 sounds:
   name_of_sound_effect:
-    file: path/to/wav/file.wav
+    file: file.wav  // must be under root_folder
     volume: 0.0 // float amount to adjust volume positive or negative
 ```
+
+### Basic Setup
+I have not included all the sound files I'm using in the repo due to distribution restrictions, but you can get set up using some common SFX.
+Drobox of shared common SFX: https://www.dropbox.com/sh/tqtzclaa4nwf6k8/AADWBlYwdfTOp48znCHOdnQRa?dl=0
+
+1. Create a `media` folder at the root directory
+2. Copy the following files from the dropbox into `media` and rename them:
+
+| Drobox File                                                         | New name               |
+|---------------------------------------------------------------------|------------------------|
+| crowd reactions/95 Crowd Reaction Sweetener Excited- Swell.wav      | crowd_ooh.wav          |
+| special effects/70 Stinger_ Orchestral Hit Stinger With Whoosh..wav | stinger.wav            |
+| special effects/short incineration v0.1.wav                         | short_incineration.wav |
+
+TODO: the common SFX for bat hits and positive crowd reactions are still being fiddled with.
+If you have your own or are willing to find your own for personal use, find SFX that fit these descriptions:
+
+| Description                                 | New name           |
+|---------------------------------------------|--------------------|
+| bat hit                                     | bat_hit.wav        |
+| another bat hit                             | bat_hit2.wav       |
+| another bat hit so things aren't repetitive | bat_hit3           |
+| low murmur crowd appluase                   | crowd_applause.wav |
+| medium cheering                             | cheer.wav          |
+| loud cheering                               | roar.wav           |
 
 ## Sound Cues
 Defines triggers for playing a sound. Configured under the `sound_cues` key.
