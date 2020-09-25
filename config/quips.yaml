@@ -48,6 +48,9 @@ announcer:
       -
         pattern: '[Pp]ies'
         replace: 'pyes'
+      -
+        pattern: 'II'
+        replace: 'the second'
     com.apple.speech.synthesis.voice.veena:
       -
         pattern: '[Pp]ies'
