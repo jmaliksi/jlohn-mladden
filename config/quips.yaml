@@ -2,7 +2,8 @@
 announcer:
   calling_for: Fridays
   announcer_type: tts
-  discord_prefix: '$say '
+  discord_prefix: ''
+  discord_onjoin: '$start'
   enable_splorts_center: true
   friends:
     - 'com.apple.speech.synthesis.voice.daniel.premium'

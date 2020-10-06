@@ -325,6 +325,7 @@ class DiscordAnnouncer(Announcer):
         self.client = discord.Client()
         self.ready = False
         self.prefix = config.get('discord_prefix', '')
+        self.onjoin = announcer_config.get('discord_onjoin', '')
 
         @self.client.event
         async def on_ready():
@@ -333,6 +334,8 @@ class DiscordAnnouncer(Announcer):
             if self.voice_channel_id:
                 self.voice_channel = self.client.get_channel(self.voice_channel_id)
                 await self.voice_channel.connect()
+            if self.onjoin:
+                await self.channel.send(self.onjoin)
             self.ready = True
 
         self.client.loop.create_task(self.say_all())
