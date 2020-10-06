@@ -14,7 +14,8 @@ from jlohn_mladden.announcer import DiscordAnnouncer, TTSAnnouncer
 @click.command()
 @click.option('--calling_for', default=None)
 @click.option('--test', is_flag=True)
-def main(calling_for, test):
+@click.option('--test_ascii', is_flag=True)
+def main(calling_for, test, test_ascii):
     with open('config/quips.yaml', 'r') as f:
         y = yaml.load(f)
         sound_manager = SoundManager(y)

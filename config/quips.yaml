@@ -57,6 +57,9 @@ announcer:
         pattern: '[Pp]ies'
         replace: 'pyes'
 
+blurses:
+  enabled: false
+
 sound_root_folder: media
 sounds:
   cheer:
@@ -179,6 +182,16 @@ sound_cues:
     sounds:
       - crowd
     delay: 0
+  -
+    trigger: steals home
+    sounds:
+      - roar
+    delay: 0
+  -
+    trigger: sacrifice
+    sounds:
+      - cheer
+    delay: 0.5
 
 quips:
   -
@@ -194,6 +207,7 @@ quips:
       pitcher: 'game.pitching'
       batter: 'game.at_bat'
     chance: 0.1
+    conditions: 'game.pitching and game.at_bat'
   -
     phrases:
       - "And that's the ball game."
@@ -399,6 +413,7 @@ quips:
     args:
       p: 'game.pitching'
     chance: 0.2
+    conditions: 'not game.batting_change'
   - phrases:
       - "Now that's blaseball!"
       - "The fourth strikes back!"
@@ -469,10 +484,10 @@ quips:
     conditions: 'any(("baby" in p for p in game.on_blase))'
   -
     phrases:
-      - "What a lot of people don't know is that home base is also known as fourth base. Makes ya wonder what would happen if they had a fifth or sixth base... heh. That'd be wild!"
+      - "Did you know that five or more bases was always a possibility? Heh. Wild!"
     trigger_after:
       - 'fourth base'
-    chance: 1.0
+    chance: 0.5
   -
     phrases:
       - "Welcome to this broadcast of {at} at {ht}. I'm your host, Jlohn Mladden, ready for another beautiful day of blaseball."

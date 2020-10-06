@@ -7,6 +7,7 @@ BLASE_MAP = {
     0: 'first',
     1: 'second',
     2: 'third',
+    3: 'fourth',
 }
 
 
@@ -37,7 +38,8 @@ class GameSnapshot(object):
         self.balls = game.at_bat_balls
         self.outs = game.half_inning_outs
 
-        self.on_blase = ['', '', '']
+        base_count = game.away_bases if game.top_of_inning else game.home_bases
+        self.on_blase = [''] * base_count
         self.bases_occupied = game.baserunner_count
         if game.baserunner_count > 0:
             for name, base in zip(game.base_runner_names, game.bases_occupied):
@@ -66,7 +68,7 @@ class GameSnapshot(object):
 
     @property
     def has_runners(self):
-        return self.on_blase != ['', '', '']
+        return self.bases_occupied > 0
 
     @property
     def runners(self):
