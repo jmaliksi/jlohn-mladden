@@ -16,6 +16,10 @@ announcer:
     - 'com.apple.speech.synthesis.voice.tessa'
     - 'com.apple.speech.synthesis.voice.veena'
     - 'com.apple.speech.synthesis.voice.Victoria'
+    - 'com.apple.speech.synthesis.voice.kate.premium'
+    - 'com.apple.speech.synthesis.voice.lee.premium'
+    - 'com.apple.speech.synthesis.voice.oliver.premium'
+    - 'com.apple.speech.synthesis.voice.serena.premium'
   localization:
     global:
       -
