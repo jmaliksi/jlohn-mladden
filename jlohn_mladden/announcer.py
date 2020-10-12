@@ -131,7 +131,7 @@ class TTSAnnouncer(Announcer):
 
     def sound_effect(self, name):
         if name and self._sound_manager:
-            self._sound_manager.cue_sound(name.lower())
+            self._sound_manager.cue_sound(name)
 
     def enqueue_message(self, message):
         self.voice.say(message, message)
