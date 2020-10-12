@@ -5,7 +5,8 @@ import random
 import re
 import uuid
 import time
-
+import os
+import asyncio
 import discord
 from dotenv import load_dotenv
 import pyttsx3
@@ -325,7 +326,7 @@ class DiscordAnnouncer(Announcer):
         self.client = discord.Client()
         self.ready = False
         self.prefix = config.get('discord_prefix', '')
-        self.onjoin = announcer_config.get('discord_onjoin', '')
+        self.onjoin = config.get('discord_onjoin', '')
 
         @self.client.event
         async def on_ready():
@@ -347,6 +348,9 @@ class DiscordAnnouncer(Announcer):
                     await self.say('{}{}'.format(self.prefix, message))
                 self.messages.clear()
             await asyncio.sleep(1)
+
+    async def start(self):
+        await self.client.start(self.token)
 
     async def say(self, message):
         if self.ready:
