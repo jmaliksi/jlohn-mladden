@@ -111,17 +111,17 @@ sound_cues:
       - cheer
     delay: 0.7
   -
-    trigger: single
+    trigger: Single
     sounds:
       - crowd
     delay: 0.2
   -
-    trigger: double
+    trigger: Double
     sounds:
       - cheer
     delay: 1.1
   -
-    trigger: triple
+    trigger: Triple
     sounds:
       - cheer
     delay: 1.1
@@ -177,7 +177,7 @@ sound_cues:
       - crowd_oh
     delay: 1.0
   -
-    trigger: "play ball"
+    trigger: "Play ball"
     sounds:
       - roar
     delay: 0
@@ -313,9 +313,9 @@ quips:
     trigger_after:
       - 'out'
       - 'score'
-      - 'single'
-      - 'double'
-      - 'triple'
+      - 'Single'
+      - 'Double'
+      - 'Triple'
       - 'home run'
       - 'grand slam'
     args:
@@ -496,7 +496,7 @@ quips:
     phrases:
       - "Welcome to this broadcast of {at} at {ht}. I'm your host, Jlohn Mladden, ready for another beautiful day of blaseball."
     trigger_before:
-      - 'play ball!'
+      - 'Play ball!'
     args:
       at: 'game.away_team'
       ht: 'game.home_team'
@@ -506,7 +506,7 @@ quips:
     phrases:
       - "Welcome to Friday Night Magic! I'm your host, Jlohn Mladden, ready for another magical cookout I mean game of blaseball!"
     trigger_before:
-      - 'play ball!'
+      - 'Play ball!'
     chance: 1.0
     conditions: 'set([game.away_team_nickname, game.home_team_nickname]) == set(["Fridays", "Magic"])'
   -
@@ -521,15 +521,15 @@ quips:
     phrases:
       - "poggers"
     trigger_after:
-      - 'york silk hits a solo home run'
-      - 'york silk hits a 2-run home run'
-      - 'york silk hits a 3-run home run'
-      - 'york silk hits a grand slam'
+      - 'York Silk hits a solo home run'
+      - 'York Silk hits a 2-run home run'
+      - 'York Silk hits a 3-run home run'
+      - 'York Silk hits a grand slam'
     chance: 1.0
   -
     phrases:
       - "I'll have what she's having!"
       - "Pour me a glass."
     trigger_after:
-      - 'juice collins hits a double'
+      - 'Juice Collins hits a Double'
     chance: 1.0

@@ -36,18 +36,18 @@ class Quip(object):
 
     @classmethod
     def say_quips(cls, play_by_play, game):
-        pbp = play_by_play.lower()
+        pbp = play_by_play
         quips = utils.UniqueList()
         for term, quip_list in cls.before_index.items():
             for quip in quip_list:
-                if term in pbp and random.random() < quip.chance and eval(quip.conditions, {}, {'game': game, 'utils': utils}):
+                if term in pbp and random.random() < quip.chance and eval(quip.conditions, {}, {'pbp': pbp, 'game': game, 'utils': utils}):
                     quips.append(quip.evaluate(pbp, game))
 
         quips.append(play_by_play)
 
         for term, quip_list in cls.after_index.items():
             for quip in quip_list:
-                if term in pbp and random.random() < quip.chance and eval(quip.conditions, {}, {'game': game, 'utils': utils}):
+                if term in pbp and random.random() < quip.chance and eval(quip.conditions, {}, {'pbp': pbp, 'game': game, 'utils': utils}):
                     quips.append(quip.evaluate(pbp, game))
 
         return quips
