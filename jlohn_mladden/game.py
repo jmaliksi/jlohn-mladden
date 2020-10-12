@@ -39,6 +39,7 @@ class GameSnapshot(object):
         self.outs = game.half_inning_outs
 
         base_count = game.away_bases if game.top_of_inning else game.home_bases
+        self.base_count = base_count
         self.on_blase = [''] * base_count
         self.bases_occupied = game.baserunner_count
         if game.baserunner_count > 0:

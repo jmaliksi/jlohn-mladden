@@ -307,7 +307,7 @@ quips:
       - 'bases loaded.'
     trigger_after:
       - 'batting for'
-    conditions: 'game.bases_occupied == 3'
+    conditions: 'game.bases_occupied == game.base_count - 1'
     chance: 1.0
   -
     phrases:
