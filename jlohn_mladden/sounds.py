@@ -53,8 +53,6 @@ class SoundManager(object):
             return
         for cue in self.sound_cues:
             if cue['trigger'] in message:
-                if message.contains(cue.get('exclude', '')):
-                    continue
                 self.play_sound(
                     random.choice(cue['sounds']),
                     delay=cue.get('delay', 0.0),
