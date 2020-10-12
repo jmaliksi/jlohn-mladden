@@ -37,6 +37,9 @@ announcer:
       -
         pattern: '-infinity'
         replace: 'negative infinity'
+      -
+        pattern: 'Dale'
+        replace: 'Dah lay'
     com.apple.speech.synthesis.voice.fiona.premium:
       -
         pattern: '(\d*)-(\d*)'
