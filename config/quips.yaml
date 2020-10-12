@@ -220,12 +220,12 @@ quips:
       - "And that's the ball game."
       - "And that's game."
     trigger_before:
-      - "game over"
+      - "Game over"
   -
     phrases:
       - '{at} {as}, {ht} {hs}.'
     trigger_after:
-      - game over
+      - Game over
       - home run
     args:
       at: 'game.away_team'
@@ -236,7 +236,7 @@ quips:
   - phrases:
     - '{at} leave in shame!'
     trigger_after:
-      - 'game over'
+      - 'Game over'
     args:
       at: 'game.away_team'
     conditions: 'game.shame is True'
