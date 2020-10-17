@@ -1,5 +1,6 @@
 import time
 
+from blaseball_mike.models import Fight
 from blaseball_mike.stream_model import StreamData
 from blaseball_mike.events import stream_events
 
@@ -67,6 +68,8 @@ class GameSnapshot(object):
         self.last_update = game.last_update
         self.snapshot_at = time.time()
 
+        self.game_type = 'game'
+
     @property
     def has_runners(self):
         return self.bases_occupied > 0
@@ -80,13 +83,20 @@ class GameSnapshot(object):
         return runners
 
 
+class BossFight(GameSnapshot):
+
+    def __init__(self, game, **kwargs):
+        super().__init__(game, **kwargs)
+        self.game_type = 'fight'
+
+
 class GamesWatcher(object):
 
     def __init__(self):
         self._games = {}
         self._subscribers = []
 
-    def update(self, games, raw=None):
+    def update(self, games, raw=None, fights=None):
         schedule = games and games.schedule
         if not schedule:
             return
@@ -94,24 +104,35 @@ class GamesWatcher(object):
         # snapshot games each cycle to avoid stale values on interpolation
         game_updates = {}
         index = {}
+
         for id_, game in schedule.games.items():
-            batting_change = False
-            if id_ in self._games:
-                last_update = self._games[id_]
-                batting_change = game.top_of_inning != last_update.top_of_inning
-            index[game.home_team_nickname.lower()] = id_
-            index[game.away_team_nickname.lower()] = id_
-            game_updates[id_] = GameSnapshot(
-                game,
-                batting_change=batting_change,
-                standings=games.standings,
-                postseason=raw.get('games', {}).get('postseason', {}),
-            )
+            game_updates[id_] = self._create_snapshot(id_, game, index, games, raw)
+
+        if fights:
+            for id_, game in fights.boss_fights.items():
+                game_updates[id_] = self._create_snapshot(id_, game, index, games, raw)
 
         for subscriber in self._subscribers:
             subscriber(game_updates, index)
 
         self._games = game_updates
+
+    def _create_snapshot(self, id_, game, index, games, raw):
+        batting_change = False
+        weather_change = False
+        if id_ in self._games:
+            last_update = self._games[id_]
+            batting_change = game.top_of_inning != last_update.top_of_inning
+            weather_change = game.weather != last_update.weather
+        index[game.home_team_nickname.lower()] = id_
+        index[game.away_team_nickname.lower()] = id_
+        Clz = BossFight if isinstance(game, Fight) else GameSnapshot
+        return Clz(
+            game,
+            batting_change=batting_change,
+            standings=games.standings,
+            postseason=raw.get('games', {}).get('postseason', {}),
+        )
 
     def subscribe(self, on_update):
         """
@@ -126,4 +147,4 @@ class GamesWatcher(object):
             if not event:
                 continue
             stream_data = StreamData(event)
-            self.update(stream_data.games, raw=event)
+            self.update(stream_data.games, raw=event, fights=stream_data.fights)
