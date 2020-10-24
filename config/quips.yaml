@@ -367,7 +367,7 @@ quips:
       - "oh, and that's a bad miss."
     trigger_before:
       - 'struck out swinging'
-    chance: 0.2
+    chance: 0.3
   -
     phrases:
       - "now that's some blays ball!"

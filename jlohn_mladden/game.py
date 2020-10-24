@@ -123,7 +123,7 @@ class GamesWatcher(object):
         if id_ in self._games:
             last_update = self._games[id_]
             batting_change = game.top_of_inning != last_update.top_of_inning
-            weather_change = game.weather != last_update.weather
+            #weather_change = game.weather != last_update.weather
         index[game.home_team_nickname.lower()] = id_
         index[game.away_team_nickname.lower()] = id_
         Clz = BossFight if isinstance(game, Fight) else GameSnapshot
