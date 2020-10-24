@@ -205,11 +205,12 @@ quips:
     phrases:
       - '{pitcher} readying to pitch.'
       - '{batter} waiting for the pitch.'
+      - '{pitcher} throws the ball.'
     trigger_before:
-      - ball.
-      - strike
+      - Ball.
+      - Strike
       - hit
-      - foul
+      - Foul
     args:
       pitcher: 'game.pitching'
       batter: 'game.at_bat'
@@ -233,8 +234,9 @@ quips:
       ht: 'game.home_team'
       hs: 'game.home_score'
     conditions: 'game.away_score != game.home_score'
-  - phrases:
-    - '{at} leave in shame!'
+  -
+    phrases:
+      - '{at} leave in shame!'
     trigger_after:
       - 'Game over'
     args:
@@ -247,6 +249,7 @@ quips:
       - '{left} out{left_s} remaining for the {tab}'
       - '{tab} have {outs} out{outs_s}'
     trigger_after:
+      - Strike
       - strike
     args:
       tab: 'game.team_at_bat'
@@ -406,9 +409,9 @@ quips:
       - "woof."
       - "can't do that."
     trigger_after:
-      - "struck out swinging"
+      - "strikes out swinging"
       - "caught stealing"
-    chance: 0.2
+    chance: 0.1
     conditions: '(game.home_score - game.away_score > 5 and game.top_of_inning) or (game.away_score - game.home_score > 5 and not game.top_of_inning)'
   -
     phrases:
@@ -416,18 +419,19 @@ quips:
       - "{p} looking ruthless today."
       - "the ruthlessness is strong with {p} today."
     trigger_after:
-      - "struck out"
+      - "strikes out"
     args:
       p: 'game.pitching'
     chance: 0.2
     conditions: 'not game.batting_change'
-  - phrases:
+  -
+    phrases:
       - "Now that's blaseball!"
       - "The fourth strikes back!"
       - "{tab} making good use of that fourth."
       - "{pitcher} make that four!"
     trigger_after:
-      - "struck out"
+      - "strikes out"
     args:
       tab: "game.team_at_bat"
       pitcher: "game.ptiching"
@@ -437,8 +441,8 @@ quips:
     phrases:
       - "tee gee eye eff folks."
     trigger_after:
-      - "top of 1"
-      - "bottom of 1"
+      - "Top of 1"
+      - "Bottom of 1"
     chance: 1.0
     conditions: 'game.pitching_team == "Fridays"'
   -
