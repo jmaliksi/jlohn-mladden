@@ -27,6 +27,8 @@ This process will run indefinitely and can be exited cleanly with a ctrl+c.
 
 `--calling_for=$TEAM_NAME` - optional argument to change what team to call for. Valid values are the team nicknames or `playoffs` to launch in playoff mode
 
+`--config=$CONFIG_FILE` - optional argument to specify location of config YAML file, default "config/quips.yaml"
+
 # Quips
 Aside from reading the play by play, jlohn can also be configured to play sound effects and say other random quips based on game state. The configuration can be found in `quips.yaml`
 
