@@ -31,6 +31,7 @@ class Announcer(abc.ABC):
         self.main_game = config['calling_for'].lower()
         self.calling_for = self.main_game
         self.last_pbps = []
+        self.last_play_count = -1
 
     @property
     def playoff_mode(self):
@@ -51,7 +52,10 @@ class Announcer(abc.ABC):
             if skip_quips:
                 return []
             if pbp.lower() in self.last_pbps:
-                return []
+                if game.play_count != self.last_play_count and pbp.lower() == self.last_pbps[-1]:
+                    pass
+                else:
+                    return []
             quips = Quip.say_quips(pbp, game)
             for quip in quips:
                 quip = self.preprocess_quip(quip)
@@ -61,6 +65,7 @@ class Announcer(abc.ABC):
                 print(quip)
                 self.enqueue_message(quip)
 
+            self.last_play_count = game.play_count
             self.last_pbps = self.last_pbps[-4:]  # redundancy
             self.speak()
 
@@ -195,7 +200,7 @@ class TTSAnnouncer(Announcer):
             self.current_game_id = game.id_
             self.choose_voice()
 
-        if 'Game over' in message and 'game over.' in self.last_pbps:
+        if game.game_complete and 'game over.' in self.last_pbps:
             game_id = self.change_channel(schedule)
             if not game_id:
                 self.engage_splorts_center(game)

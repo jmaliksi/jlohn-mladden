@@ -26,6 +26,9 @@ class GameSnapshot(object):
         self.home_score = game.home_score
         self.point_differential = abs(self.home_score - self.away_score)
 
+        self.winning_team = self.away_team_nickname if self.away_score > self.home_score else self.home_team_nickname
+        self.losing_team = self.away_team_nickname if self.away_score < self.home_score else self.home_team_nickname
+
         self.inning = game.inning
         self.batting_change = kwargs.get('batting_change', False)
         self.top_of_inning = game.top_of_inning
@@ -41,11 +44,14 @@ class GameSnapshot(object):
 
         base_count = game.away_bases if game.top_of_inning else game.home_bases
         self.base_count = base_count
-        self.on_blase = [''] * base_count
+        self.on_blase = [''] * max(base_count, len(game.base_runner_names))
         self.bases_occupied = game.baserunner_count
         if game.baserunner_count > 0:
             for name, base in zip(game.base_runner_names, game.bases_occupied):
-                self.on_blase[base] = name or 'runner'
+                try:
+                    self.on_blase[base] = name or 'runner'
+                except Exception:
+                    pass
 
         standings = kwargs.get('standings', {})
         self.series_length = game.series_length
@@ -65,10 +71,13 @@ class GameSnapshot(object):
 
         self.game_complete = game.game_complete
         self.shame = game.shame
-        self.last_update = game.last_update
+        self.last_update = ' '.join([game.last_update, game.score_update]).strip()
+        self.score_update = game.score_update
+        self.score_ledger = game.score_ledger
         self.snapshot_at = time.time()
 
         self.game_type = 'game'
+        self.play_count = game.play_count
 
     @property
     def has_runners(self):

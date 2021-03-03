@@ -2,7 +2,7 @@ aiohttp==3.6.2
 aiohttp-sse-client==0.1.7
 async-timeout==3.0.1
 attrs==20.2.0
-blaseball-mike==3.2.1
+blaseball-mike==5.4.1
 certifi==2020.6.20
 cffi==1.14.2
 click==7.1.2

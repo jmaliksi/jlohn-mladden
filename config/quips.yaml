@@ -1,6 +1,6 @@
 ---
 announcer:
-  calling_for: Fridays
+  calling_for: "Fridays"
   announcer_type: tts
   discord_prefix: ''
   discord_onjoin: '$start'
@@ -95,7 +95,7 @@ sounds:
     volume: -14
   splorts_update:
     file: stinger.wav
-    volume: -12
+    volume: -14
 
 sound_cues:
   -
@@ -114,6 +114,11 @@ sound_cues:
       - cheer
     delay: 0.7
   -
+    trigger: scored!
+    sounds:
+      - cheer
+    delay: 0.7
+  -
     trigger: Single
     sounds:
       - crowd
@@ -124,7 +129,17 @@ sound_cues:
       - cheer
     delay: 1.1
   -
+    trigger: double play
+    sounds:
+      - cheer
+    delay: 1.1
+  -
     trigger: Triple
+    sounds:
+      - cheer
+    delay: 1.1
+  -
+    trigger: triple play
     sounds:
       - cheer
     delay: 1.1
@@ -205,17 +220,19 @@ quips:
     phrases:
       - '{pitcher} readying to pitch.'
       - '{batter} waiting for the pitch.'
-      - '{pitcher} throws the ball.'
+      - '{pitcher} throws!'
     trigger_before:
       - Ball.
       - Strike
       - hit
       - Foul
+      - strike
+      - walk
     args:
       pitcher: 'game.pitching'
       batter: 'game.at_bat'
     chance: 0.1
-    conditions: 'game.pitching and game.at_bat'
+    conditions: 'game.pitching or game.at_bat'
   -
     phrases:
       - "And that's the ball game."
@@ -311,6 +328,15 @@ quips:
     trigger_after:
       - 'batting for'
     conditions: 'game.bases_occupied == game.base_count - 1'
+    chance: 1.0
+  -
+    phrases:
+      - '{ledger}.'
+    trigger_after:
+      - 'scored!'
+    args:
+      ledger: 'game.score_ledger'
+    conditions: 'bool(game.score_ledger)'
     chance: 1.0
   -
     phrases:
@@ -498,7 +524,7 @@ quips:
       - "Did you know that five or more bases was always a possibility? Heh. Wild!"
     trigger_after:
       - 'fourth base'
-    chance: 0.5
+    chance: 0.2
   -
     phrases:
       - "Welcome to this broadcast of {at} at {ht}. I'm your host, Jlohn Mladden, ready for another beautiful day of blaseball."
