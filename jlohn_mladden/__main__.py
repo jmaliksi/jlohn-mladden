@@ -19,7 +19,6 @@ from jlohn_mladden.announcer import DiscordAnnouncer, TTSAnnouncer
 def main(calling_for, test, test_ascii, config):
     with open(config, 'r') as f:
         y = yaml.load(f)
-        sound_manager = SoundManager(y)
 
         quips = Quip.load(y['quips'])
 
@@ -32,6 +31,7 @@ def main(calling_for, test, test_ascii, config):
             announcer = DiscordAnnouncer(announcer_config, None)
             loop.create_task(announcer.start())
         elif announcer_config['announcer_type'] == 'tts':
+            sound_manager = SoundManager(y)
             announcer = TTSAnnouncer(announcer_config, sound_manager)
         else:
             raise Exception('Unsupported announcer type')
