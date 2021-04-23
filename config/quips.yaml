@@ -87,9 +87,6 @@ sounds:
   roar:
     file: roar.wav
     volume: -13
-  incineration:
-    file: short_incineration.wav
-    volume: -15
   crowd_oh:
     file: crowd_ooh.wav
     volume: -14
