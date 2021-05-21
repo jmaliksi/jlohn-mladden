@@ -4,7 +4,7 @@ async-timeout==3.0.1
 attrs==20.2.0
 blaseball-mike==5.5.2
 certifi==2020.6.20
-cffi==1.14.2
+cffi==1.14.5
 click==7.1.2
 chardet==3.0.4
 discord.py==1.4.1

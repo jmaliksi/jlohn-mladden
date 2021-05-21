@@ -229,7 +229,6 @@ quips:
       pitcher: 'game.pitching'
       batter: 'game.at_bat'
     chance: 0.1
-    conditions: 'game.pitching or game.at_bat'
   -
     phrases:
       - "And that's the ball game."
